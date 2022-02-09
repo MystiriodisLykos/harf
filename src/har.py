@@ -6,46 +6,46 @@ from serde import serde
 class Creator:
     name: str
     version: str
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 
 @serde
 class Cookie:
     name: str
     value: str
-    path: Optional[str] = None
-    domain: Optional[str] = None
-    expires: Optional[str] = None
-    httpOnly: Optional[bool] = None
-    secure: Optional[bool] = None
-    comment: Optional[str] = None
+    path: Optional[str]
+    domain: Optional[str]
+    expires: Optional[str]
+    httpOnly: Optional[bool]
+    secure: Optional[bool]
+    comment: Optional[str]
 
 @serde
 class Header:
     name: str
     value: str
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class QueryString:
     name: str
     value: str
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class Param:
     name: str
-    value: Optional[str] = None
-    fileName: Optional[str] = None
-    contentType: Optional[str] = None
-    comment: Optional[str] = None
+    value: Optional[str]
+    fileName: Optional[str]
+    contentType: Optional[str]
+    comment: Optional[str]
 
 @serde
 class PostData:
     mimeType: str
     params: List[Param]
     text: str
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class Request:
@@ -57,17 +57,17 @@ class Request:
     queryString: List[QueryString]
     headersSize: int
     bodySize: int
-    postData: Optional[PostData] = None
-    comment: Optional[str] = None
+    postData: Optional[PostData]
+    comment: Optional[str]
 
 @serde
 class Content:
     size: int
     mimeType: str
-    compression: Optional[int] = None
-    text: Optional[str] = None
-    encoding: Optional[str] = None
-    comment: Optional[str] = None
+    compression: Optional[int]
+    text: Optional[str]
+    encoding: Optional[str]
+    comment: Optional[str]
 
 @serde
 class Response:
@@ -80,40 +80,40 @@ class Response:
     redirectURL: str
     headersSize: int
     bodySize: int
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class BeforeRequest:
     lastAccess: str
     eTag: str
     hitCount: int
-    expires: Optional[str] = None
-    comment: Optional[str] = None
+    expires: Optional[str]
+    comment: Optional[str]
 
 @serde
 class AfterRequest:
     lastAccess: str
     eTag: str
     hitCount: int
-    expires: Optional[str] = None
-    comment: Optional[str] = None
+    expires: Optional[str]
+    comment: Optional[str]
 
 @serde
 class Cache:
-    beforeRequest: Optional[BeforeRequest] = None
-    afterRequest: Optional[AfterRequest] = None
-    comment: Optional[str] = None
+    beforeRequest: Optional[BeforeRequest]
+    afterRequest: Optional[AfterRequest]
+    comment: Optional[str]
 
 @serde
 class Timings:
     send: float
     wait: float
     receive: float
-    blocked: Optional[float] = None
-    dns: Optional[float] = None
-    connect: Optional[float] = None
-    ssl: Optional[float] = None
-    comment: Optional[str] = None
+    blocked: Optional[float]
+    dns: Optional[float]
+    connect: Optional[float]
+    ssl: Optional[float]
+    comment: Optional[str]
 
 @serde
 class Entry:
@@ -123,22 +123,22 @@ class Entry:
     response: Response
     cache: Cache
     timings: Timings
-    pageref: Optional[str] = None
-    serverIPAddress: Optional[str] = None
-    connection: Optional[str] = None
-    comment: Optional[str] = None
+    pageref: Optional[str]
+    serverIPAddress: Optional[str]
+    connection: Optional[str]
+    comment: Optional[str]
 
 @serde
 class Browser:
     name: str
     version: str
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class PageTimings:
-    onContentLoad: Optional[int] = None
-    onLoad: Optional[int] = None
-    comment: Optional[str] = None
+    onContentLoad: Optional[int]
+    onLoad: Optional[int]
+    comment: Optional[str]
 
 @serde
 class Page:
@@ -146,17 +146,16 @@ class Page:
     id: str
     title: str
     pageTimings: PageTimings
-    comment: Optional[str] = None
+    comment: Optional[str]
 
 @serde
 class Log:
     creator: Creator
     entries: List[Entry]
+    browser: Optional[Browser]
+    pages: Optional[List[Page]]
+    comment: Optional[str]
     version: str = "1.2"
-    browser: Optional[Browser] = None
-    pages: Optional[List[Page]] = None
-    comment: Optional[str] = None
-
 
 @serde
 class Har:
