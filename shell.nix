@@ -20,7 +20,6 @@ let
         extraLibs = with python38Packages; [
             mypy
             black
-            markdown
             pyserde
         ];
     };
