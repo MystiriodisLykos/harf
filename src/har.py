@@ -1,20 +1,15 @@
-from dataclasses import dataclass
 from typing import Optional, List
 
-from serde import serialize, deserialize
+from serde import serde
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Creator:
     name: str
     version: str
     comment: Optional[str] = None
 
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Cookie:
     name: str
     value: str
@@ -25,25 +20,19 @@ class Cookie:
     secure: Optional[bool] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Header:
     name: str
     value: str
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class QueryString:
     name: str
     value: str
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Param:
     name: str
     value: Optional[str] = None
@@ -51,18 +40,14 @@ class Param:
     contentType: Optional[str] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class PostData:
     mimeType: str
     params: List[Param]
     text: str
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Request:
     method: str
     url: str
@@ -75,9 +60,7 @@ class Request:
     postData: Optional[PostData] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Content:
     size: int
     mimeType: str
@@ -86,9 +69,7 @@ class Content:
     encoding: Optional[str] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Response:
     status: int
     statusText: str
@@ -101,9 +82,7 @@ class Response:
     bodySize: int
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class BeforeRequest:
     lastAccess: str
     eTag: str
@@ -111,9 +90,7 @@ class BeforeRequest:
     expires: Optional[str] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class AfterRequest:
     lastAccess: str
     eTag: str
@@ -121,17 +98,13 @@ class AfterRequest:
     expires: Optional[str] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Cache:
     beforeRequest: Optional[BeforeRequest] = None
     afterRequest: Optional[AfterRequest] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Timings:
     send: float
     wait: float
@@ -142,9 +115,7 @@ class Timings:
     ssl: Optional[float] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Entry:
     startedDateTime: str
     time: float
@@ -157,25 +128,19 @@ class Entry:
     connection: Optional[str] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Browser:
     name: str
     version: str
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class PageTimings:
     onContentLoad: Optional[int] = None
     onLoad: Optional[int] = None
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Page:
     startedDateTime: str
     id: str
@@ -183,9 +148,7 @@ class Page:
     pageTimings: PageTimings
     comment: Optional[str] = None
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Log:
     creator: Creator
     entries: List[Entry]
@@ -195,9 +158,7 @@ class Log:
     comment: Optional[str] = None
 
 
-@serialize
-@deserialize
-@dataclass
+@serde
 class Har:
     log: Log
 
