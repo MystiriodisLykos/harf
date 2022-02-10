@@ -1,24 +1,60 @@
+from base64 import b64decode
+from dataclasses import replace
+from functools import partial
+from itertools import chain
 from uuid import uuid4
 from typing import Set, Dict, List
+from re import sub, match
+
+import json
 
 from har import Har, Request, Response
 
 from serde.json import from_json
 
 def get_request_values(r: Request) -> Dict[str, str]:
-    pass
+    m = match("https://gorest.co.in/public/v2/users/(\d+)", r.url)
+    if m:
+        return {m.group(1): "userId"}
+    return {}
 
 def get_response_values(r: Response) -> Dict[str, str]:
-    pass
+    text = r.content.text
+    if text:
+        data = json.loads(text)
+        if type(data) == list:
+            return {e["id"]: "id" for e in data}
+        return {data["id"]: "id"}
+    return {}
 
 def find_replace_request(pattern: str, repl: str, r: Request) -> Request:
-    pass
+    replace_re = partial(sub, pattern, repl)
+    postData = r.postData
+    if postData:
+        postData = replace(
+            postData,
+            text=replace_re(postData.text)
+        )
+    return replace(
+        r,
+        url=replace_re(r.url),
+        queryString=[replace(q, value=replace_re(q.value)) for q in r.queryString],
+        postData=postData
+    )
 
 def find_replace_response(pattern: str, repl: str, r: Response) -> Response:
-    pass
+    replace_re = partial(sub, pattern, repl)
+    if r.content.text:
+        return replace(
+            r,
+            content=replace(r.content, text=replace_re(r.content.text))
+        )
+    return r
 
 def connonical_name(value, canidates: Set[str], all_names: Set[str]) -> str:
-    pass
+    if len(canidates) > 1:
+        return f"[[{list(canidates-set(['id']))[0]}]]"
+    return value
 
 def parse(h: Har):
     tracked_values: Dict[str, List[str]] = {}
