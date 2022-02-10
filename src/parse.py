@@ -60,19 +60,25 @@ def parse(h: Har):
     tracked_values: Dict[str, List[str]] = {}
     for entry in h.log.entries:
         request, response = entry.request, entry.response
-        new_values = {**get_request_values(request), **get_response_values(response)}
-        for value, name in new_values.items():
+        if response.content.encoding == "base64":
+            response.content = replace(response.content, text=b64decode(response.content.text).decode("utf-8"))
+        new_request_values = get_request_values(request)
+        new_response_values = get_response_values(response)
+        for value, name in chain(new_request_values.items(), new_response_values.items()):
+            value = str(value)
             if value in tracked_values:
                 tracked_values[value].append(name)
             else:
                 tracked_values[value] = [f"httparseId.{uuid4()}", name]
         for value, names in tracked_values.items():
             id = names[0]
-            entry.request = find_replace_request(value, id, request)
-            entry.response = find_replace_response(value, id, response)
+            request = find_replace_request(value, id, request)
+            response = find_replace_response(value, id, response)
+        entry.request = request
+        entry.response = response
     all_names: Set[str] = set()
     for names in tracked_values.values():
-        all_names.union(set(names))
+        all_names |= set(names[1:])
     for entry in h.log.entries:
         for value, names in tracked_values.items():
             id, *names = names
