@@ -86,3 +86,10 @@ def parse(h: Har):
             entry.request = find_replace_request(id, name, entry.request)
             entry.response = find_replace_response(id, name, entry.response)
 
+if __name__ == "__main__":
+    from serde.json import from_json
+    with open("./test/gorest_demo.har") as file:
+        har = from_json(Har, file.read())
+        parse(har)
+        from pprint import pprint
+        pprint(har.log.entries[1].response.content.text)
