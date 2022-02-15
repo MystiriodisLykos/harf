@@ -20,10 +20,11 @@ def cata(fmap: FMAP[A, B, S, T], alg: Callable[[T], A], source: S) -> A:
     return alg(results)
 
 
-def para(fmap: FMAP[A, B, S, T], alg: Callable[[Tuple[S, T]], A], source: S) -> A:
+def para(fmap: FMAP[A, B, S, T], alg: Callable[[S, T], A], source: S) -> A:
     def alg_(x):
         source = fmap(lambda p: p[0], x)
-        result = alg(x)
+        results = fmap(lambda p: p[1], x)
+        result = alg(source, results)
         return (source, result)
     return cata(fmap, alg_, source)[1]
 
