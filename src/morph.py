@@ -11,8 +11,10 @@ FMAP = Callable[[Callable[[A], B], S], T]
 
 def cata(fmap: FMAP[A, B, S, T], alg: Callable[[T], A], source: S) -> A:
     """
+    fmap :: (a -> b) -> s   -> t
     fmap :: (a -> b) -> s a -> s b
-    alg :: s a - > a
+    alg :: t   -> a
+    alg :: s b - > a
     source :: s
     """
     inner_cata = partial(cata, fmap, alg)
