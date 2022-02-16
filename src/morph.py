@@ -54,3 +54,38 @@ def fmap_json(f: Any, j):
     if type(j) == dict:
         return {k: f(v) for k, v in j.items()}
     return j
+
+
+from dataclasses import dataclass, is_dataclass, replace
+from typing import List, Optional, Union
+
+@dataclass
+class Sub:
+    x: int
+    y: Optional[str]
+
+@dataclass
+class Nest:
+    a: List[Sub]
+
+def lifted_fmap_dataclass(f: Any, d):
+    if is_dataclass(d):
+        fields_ = fields(d)
+        new_values = {}
+        for field in fields_:
+            name = field.name
+            value = getattr(d, name)
+            if type(value) in set([list, tuple, dict, set]):
+                new_values[name] = lifted_fmap_dataclass(f, value)
+            else:
+                new_values[name] = f(value)
+        return replace(d, **new_values)
+    if type(d) == list:
+        return [f(e) for e in d]
+    if type(d) == tuple:
+        return (f(e) for e in d)
+    if type(d) == dict:
+        return {k: f(v) for k, v in d.items()}
+    if type(d) == set:
+        return {f(e) for e in d}
+    return d
