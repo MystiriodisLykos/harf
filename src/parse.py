@@ -3,14 +3,18 @@ from dataclasses import replace
 from functools import partial
 from itertools import chain
 from uuid import uuid4
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Protocol, TypeVar, Tuple
 from re import sub, match
 
 import json
 
-from har import Har, Request, Response
+from har import Har, Request, Response, Entry
 
 from serde.json import from_json
+
+
+A = TypeVar("A")
+
 
 def get_request_values(r: Request) -> Dict[str, str]:
     m = match("https://gorest.co.in/public/v2/users/(\d+)", r.url)
@@ -85,6 +89,38 @@ def parse(h: Har):
             name = connonical_name(value, set(names), all_names)
             entry.request = find_replace_request(id, name, entry.request)
             entry.response = find_replace_response(id, name, entry.response)
+
+
+def parse_(h: Har, env: A, parse_entry: Callable[[Entry, A, int], A]) -> A:
+    for i, entry in enumerate(h.log.entries):
+        response = entry.response
+        if response.content.encoding == "base64":
+            content = response.content
+            response.content = replace(content, text=b64decode(content.text).decode("utf"))
+        env = parse_entry(entry, env, i)
+    return env
+
+
+ValueEnv = Tuple[Har, Dict[str, List[str]]] # Resulting Har and a dictionary of values to names
+ValueEnv` = Tuple[Har, Dict[str, List[Tuple[int, str]]]] # Same as ValueEnv but aleases have their index
+
+def parse_important_values(entry: Entry, env: ValueEnv, index) -> ValueEnv:
+    har, tracked_values = env
+    request, response = entry.request, entry.response
+    new_request_values = get_request_values(request)
+    new_response_values = get_response_values(response)
+    for value, name in chain(new_request_values.items(), new_response_values.items()):
+        value = str(value)
+        if value in tracked_values:
+            tracked_values[value].append(name)
+        else:
+            tracked_values[value] = [f"httparseId.{uuid4()}", name]
+    for value, names in tracked_values.items():
+        id = names[0]
+        request = find_replace_request(value, id, request)
+        response = find_replace_response(value, id, response)
+    entry = replace(entry, request=request, response=response)
+
 
 if __name__ == "__main__":
     from serde.json import from_json
