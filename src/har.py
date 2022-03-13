@@ -1,13 +1,22 @@
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import Optional, List, Callable, Generic, TypeVar
 
 from serde import serde
 
+A = TypeVar("A")
+
+
 @serde
-class Creator:
+class Creator(Generic[A]):
     name: str
     version: str
     comment: Optional[str]
 
+
+CreatorAlg = Callable[[Creator[A]], A]
+
+def creatorF(f: Callable[[str, str, Optional[str]], A], c: Creator) -> A:
+    return f(c.name, c.version, c.comment)
 
 @serde
 class Cookie:
