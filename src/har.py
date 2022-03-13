@@ -15,8 +15,11 @@ class Creator(Generic[A]):
 
 CreatorAlg = Callable[[Creator[A]], A]
 
+
 def creatorF(f: Callable[[str, str, Optional[str]], A], c: Creator) -> A:
-    return f(c.name, c.version, c.comment)
+    def alg(c: Creator[A]) -> A:
+        return f(c.name, c.version, c.commen)
+    return cata(alg, Creator)
 
 @serde
 class Cookie:
