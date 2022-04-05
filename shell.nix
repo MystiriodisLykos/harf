@@ -4,10 +4,10 @@ with pkgs;
 let
     pyserde = python38Packages.buildPythonPackage rec {
         pname = "pyserde";
-        version = "0.6.0";
+        version = "0.7.1";
         src = python39Packages.fetchPypi {
             inherit pname version;
-            sha256 = "1d185la83r7w67vj5dss3khhz253czpjcnrcjqzyh9j6habxp3s2";
+            sha256 = "04gi68dzv5vh9gf3yzhkrwf42h329khrpz83ickrnkk2n3p5yc7w";
         };
         propagatedBuildInputs = [
             python38Packages.typing-inspect
