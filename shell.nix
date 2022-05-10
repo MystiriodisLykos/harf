@@ -2,22 +2,22 @@
 
 with pkgs;
 let
-    pyserde = python39Packages.buildPythonPackage rec {
+    pyserde = python3Packages.buildPythonPackage rec {
         pname = "pyserde";
         version = "0.7.2";
-        src = python39Packages.fetchPypi {
+        src = python3Packages.fetchPypi {
             inherit pname version;
             sha256 = "0qnv3b06a797yhdz2wflnkh1q22b4nspny9z0kdikqlpj4gz3gqj";
         };
         propagatedBuildInputs = [
-            python39Packages.typing-inspect
-            python39Packages.jinja2
-            python39Packages.stringcase
+            python3Packages.typing-inspect
+            python3Packages.jinja2
+            python3Packages.stringcase
         ];
         doCheck = false;
     };
-    mypython = python310.buildEnv.override {
-        extraLibs = with python39Packages; [
+    mypython = python3.buildEnv.override {
+        extraLibs = with python3Packages; [
             mypy
             black
             pyserde
