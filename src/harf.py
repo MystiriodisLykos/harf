@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Callable, List, Union, cast
 
-from serde import serde
-from serde.json import from_json
+from serde import serde, SerdeSkip
+from serde.json import from_json, to_json
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -90,6 +90,15 @@ class EntryF(Generic[A, B]):
 HarF = Union[QueryStringF[A, A], CookieF[A, A], RequestF[A, A], EntryF[A, A]]
 
 
+def seralize(cls, o):
+    print(cls)
+    print()
+    print(o)
+    print()
+    print()
+    raise SerdeSkip()
+
+
 @dataclass
 class FixHar:
     unFix: HarF["FixHar"]
@@ -97,7 +106,7 @@ class FixHar:
     def __str__(self) -> str:
         return str(self.unFix)
 
-FixHar = serde(FixHar)
+FixHar = serde(FixHar, serializer=seralize, deserializer=seralize)
 
 def query_string_f(name: str, value: str) -> FixHar:
     return FixHar(QueryStringF(name, value))
