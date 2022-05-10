@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Callable, List, Union, cast
+from typing import TypeVar, Generic, Callable, List, Union, cast, Any
 
-from serde import serde, SerdeSkip
-from serde.json import from_json, to_json
+from serde import serde, SerdeSkip, field
+from serde.json import from_json, to_json, JsonSerializer, JsonDeserializer
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -102,11 +102,27 @@ def seralize(cls, o):
 @dataclass
 class FixHar:
     unFix: HarF["FixHar"]
+#    unFix: HarF["FixHar"] = field(flatten=True)
+#    a: int = 1
 
     def __str__(self) -> str:
         return str(self.unFix)
 
+class FixSerializer(JsonSerializer):
+    @classmethod
+    def serialize(cls, obj, **opts):
+        print(cls)
+        print()
+        print(obj)
+        print()
+        print(opts)
+        print()
+        return super().serialize(obj, **opts)
+
+
+
 FixHar = serde(FixHar, serializer=seralize, deserializer=seralize)
+#FixHar = serde(FixHar)
 
 def query_string_f(name: str, value: str) -> FixHar:
     return FixHar(QueryStringF(name, value))
