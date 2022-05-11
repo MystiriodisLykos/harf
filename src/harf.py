@@ -90,85 +90,37 @@ class EntryF(Generic[A, B]):
 HarF = Union[QueryStringF[A, A], CookieF[A, A], RequestF[A, A], EntryF[A, A]]
 
 
-@dataclass
-class FixHar:
-    unFix: HarF["FixHar"]
+def cata(a: Callable[[HarF[A]], A], h: HarF) -> A:
+    def inner_cata(e: HarF) -> A:
+        return cata(a, e)
 
-    def __str__(self) -> str:
-        return str(self.unFix)
-
-
-FixHar = serde(FixHar)
+    return a(h.nmap(inner_cata, inner_cata))
 
 
+QueryString = QueryStringF[Any, Any]
+Cookie = CookieF[Any, Any]
+Request = RequestF[QueryString, Cookie]
+Entry = EntryF[Request, Any]
 
-generated_to_dict = FixHar.__serde__.funcs['to_dict']
-
-def to_dict(obj, *args, **kwargs):
-    res = generated_to_dict(obj, *args, **kwargs)
-    return res["unFix"]
-
-generated_from_dict = FixHar.__serde__.funcs["from_dict"]
-
-FixHar.__serde__.funcs["to_dict"] = to_dict
-
-
-from serde.de import is_deserializable
-from serde.compat import is_generic, get_origin, get_generic_arg
-
-def from_dict(*args, cls, data, **kwargs):
-#    print(cls.__serde__.union_se_args)
-    def make_new_from_dict(type_):
-        old_from_dict = type_.__serde__.funcs["from_dict"]
-        def new_from_dict(*args, data, maybe_generic=None, **kwargs):
-            print(type_)
-            print(get_generic_arg(maybe_generic, 0))
-            print(data)
-            res= old_from_dict(*args, data=data, maybe_generic=maybe_generic, **kwargs)
-            print(res)
-            return res
-        return new_from_dict
-    for union in cls.__serde__.union_se_args.values():
-        for type_ in union:
-#            print(type_)
-#            print(is_generic(type_))
-            type_ = get_origin(type_)
-#            print(type_)
-#            print(is_deserializable(type_))
-            type_.__serde__.funcs["from_dict"] = make_new_from_dict(type_)
-#    print(data)
-    data = {"unFix": data}
-    res = generated_from_dict(*args, cls, data=data, **kwargs)
-#    print(repr(res))
-    return res
-
-
-FixHar.__serde__.funcs["from_dict"] = from_dict
-
-def query_string_f(name: str, value: str) -> FixHar:
-    return FixHar(QueryStringF(name, value))
-
-
-def cookie_f(name: str, value: str) -> FixHar:
-    return FixHar(CookieF(name, value))
-
-
-def request_f(
-    method: str, url: str, query_string: List[FixHar], cookies: List[FixHar]
-) -> FixHar:
-    return FixHar(RequestF(method, url, query_string, cookies))
-
-
-def entry_f(time: float, request: FixHar) -> FixHar:
-    return FixHar(EntryF(time, request))
-
-
-example = entry_f(
+example = Entry(
     1,
-    request_f(
+    Request(
         "GET",
         "/api",
-        [query_string_f("q1", "value1"), query_string_f("q2", "value2")],
-        [cookie_f("c", "cookie")],
+        [QueryString("q1", "v1"), QueryString("q2", "v2")],
+        [Cookie("c", "c1")],
     ),
 )
+
+
+def fold(d: HarF[str]) -> str:
+    if isinstance(d, QueryStringF):
+        return f"{d.name}={d.value}"
+    if isinstance(d, RequestF):
+        return f"{d.method} {d.url}?{'&'.join(d.queryString)}"
+    if isinstance(d, EntryF):
+        return f"{d.request}\n"
+    return ""
+
+
+cata(fold, example)
