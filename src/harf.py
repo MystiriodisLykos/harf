@@ -90,39 +90,60 @@ class EntryF(Generic[A, B]):
 HarF = Union[QueryStringF[A, A], CookieF[A, A], RequestF[A, A], EntryF[A, A]]
 
 
-def seralize(cls, o):
-    print(cls)
-    print()
-    print(o)
-    print()
-    print()
-    raise SerdeSkip()
-
-
 @dataclass
 class FixHar:
     unFix: HarF["FixHar"]
-#    unFix: HarF["FixHar"] = field(flatten=True)
-#    a: int = 1
 
     def __str__(self) -> str:
         return str(self.unFix)
 
-class FixSerializer(JsonSerializer):
-    @classmethod
-    def serialize(cls, obj, **opts):
-        print(cls)
-        print()
-        print(obj)
-        print()
-        print(opts)
-        print()
-        return super().serialize(obj, **opts)
+
+FixHar = serde(FixHar)
 
 
 
-FixHar = serde(FixHar, serializer=seralize, deserializer=seralize)
-#FixHar = serde(FixHar)
+generated_to_dict = FixHar.__serde__.funcs['to_dict']
+
+def to_dict(obj, *args, **kwargs):
+    res = generated_to_dict(obj, *args, **kwargs)
+    return res["unFix"]
+
+generated_from_dict = FixHar.__serde__.funcs["from_dict"]
+
+FixHar.__serde__.funcs["to_dict"] = to_dict
+
+
+from serde.de import is_deserializable
+from serde.compat import is_generic, get_origin, get_generic_arg
+
+def from_dict(*args, cls, data, **kwargs):
+#    print(cls.__serde__.union_se_args)
+    def make_new_from_dict(type_):
+        old_from_dict = type_.__serde__.funcs["from_dict"]
+        def new_from_dict(*args, data, maybe_generic=None, **kwargs):
+            print(type_)
+            print(get_generic_arg(maybe_generic, 0))
+            print(data)
+            res= old_from_dict(*args, data=data, maybe_generic=maybe_generic, **kwargs)
+            print(res)
+            return res
+        return new_from_dict
+    for union in cls.__serde__.union_se_args.values():
+        for type_ in union:
+#            print(type_)
+#            print(is_generic(type_))
+            type_ = get_origin(type_)
+#            print(type_)
+#            print(is_deserializable(type_))
+            type_.__serde__.funcs["from_dict"] = make_new_from_dict(type_)
+#    print(data)
+    data = {"unFix": data}
+    res = generated_from_dict(*args, cls, data=data, **kwargs)
+#    print(repr(res))
+    return res
+
+
+FixHar.__serde__.funcs["from_dict"] = from_dict
 
 def query_string_f(name: str, value: str) -> FixHar:
     return FixHar(QueryStringF(name, value))
