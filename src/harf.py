@@ -79,7 +79,10 @@ class CacheF(Generic[A, B, C, D]):
         h: F[C, Y],
         i: F[D, Z],
     ) -> "CacheF[W, X, Y, Z]":
-        return CacheF(f(self.beforeRequest), g(self.afterRequest))
+        return CacheF(
+            f(self.beforeRequest) if self.beforeRequest else None,
+            g(self.afterRequest) if self.afterRequest else None,
+        )
 
 
 @serde
@@ -417,6 +420,7 @@ class TopF(Generic[A, B, C, D]):
         i: F[D, Z],
     ) -> "TopF[W, X, Y, Z]":
         return TopF(f(self.log))
+
 
 HarF = Union[
     TimingsF[A, A, A, A],
