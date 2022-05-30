@@ -68,8 +68,9 @@ class BeforeAfterRequestF(Generic[A, B, C, D]):
 @serde
 @dataclass
 class CacheF(Generic[A, B, C, D]):
-    beforeRequest: A
-    afterRequest: B
+    beforeRequest: Optional[A] = None
+    afterRequest: Optional[B] = None
+    comment: ostr = ""
 
     def nmap(
         self: "CacheF[A, B, C, D]",
@@ -111,7 +112,7 @@ class ResponseF(Generic[A, B, C, D]):
     headers: List[B]
     content: C
     redirectURL: str
-    headerSize: int = -1
+    headersSize: int = -1
     bodySize: int = -1
     comment: ostr = ""
 
@@ -186,7 +187,7 @@ class PostDataTextF(Generic[A, B, C, D]):
         return self  # type: ignore[return-value]
 
 
-PostDataF = Union[PostDataParamF[A, B, C, D], PostDataTextF[A, B, C, D]]
+PostDataF = Union[PostDataTextF[A, B, C, D], PostDataParamF[A, B, C, D]]
 
 
 @serde
@@ -254,7 +255,7 @@ class RequestF(Generic[A, B, C, D]):
     cookies: List[A]
     headers: List[B]
     queryString: List[C]
-    headerSize: int
+    headersSize: int
     bodySize: int
     postData: Optional[D] = None
     comment: ostr = ""
@@ -382,9 +383,9 @@ class CreatorF(Generic[A, B, C, D]):
 class LogF(Generic[A, B, C, D]):
     creator: A
     entries: List[B]
+    pages: List[D] = field(default_factory=list)
     version: str = "1.2"
     browser: Optional[C] = None
-    pages: List[D] = field(default_factor=list)
     comment: ostr = ""
 
     def nmap(
@@ -402,6 +403,20 @@ class LogF(Generic[A, B, C, D]):
             pages=list(map(i, self.pages)),
         )
 
+
+@serde
+@dataclass
+class TopF(Generic[A, B, C, D]):
+    log: A
+
+    def nmap(
+        self: "TopF[A, B, C, D]",
+        f: F[A, W],
+        g: F[B, X],
+        h: F[C, Y],
+        i: F[D, Z],
+    ) -> "TopF[W, X, Y, Z]":
+        return TopF(f(self.log))
 
 HarF = Union[
     TimingsF[A, A, A, A],
@@ -421,6 +436,7 @@ HarF = Union[
     BrowserF[A, A, A, A],
     CreatorF[A, A, A, A],
     LogF[A, A, A, A],
+    TopF[A, A, A, A],
 ]
 
 
@@ -448,6 +464,7 @@ Page = PageF[PageTimings, Any, Any, Any]
 Browser = BrowserF[Any, Any, Any, Any]
 Creator = CreatorF[Any, Any, Any, Any]
 Log = LogF[Creator, Entry, Browser, Page]
+Har = TopF[Log, Any, Any, Any]
 
 """
 example = Entry(
