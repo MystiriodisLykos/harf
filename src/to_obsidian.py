@@ -7,41 +7,43 @@ with open("test/www.demoblaze.com_Archive [22-05-30 13-47-04].har") as file:
     data = from_json(Har, file.read())
 
 
-class Env(NamedTuple):
+class EnvE(NamedTuple):
     name: str
     value: Any
-    next_: "Env"
 
+Env = List[EnvE]
 
-def get_values(element: HarF[Env]) -> Env:
+def get_values(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
 #    match type(element):
 #        case QueryStringF:
     if isinstance(element, QueryStringF):
-            return Env(element.name, element.value, None)
+            id = uuid4()
+            name, value = element.name, element.value
+            return replace(element, name=id), [EnvE(id, value), EnvE(name, value)]
 #        case HeaderF:
-    if isinstance(element, HeaderF):
-            return Env(element.name, element.value, None)
+#    if isinstance(element, HeaderF):
+#            id = uuid4()
+#            name, value = element.name, element.value
+#            return replace(element, name=id), [EnvE(id, value), EnvE(name, value)]
 #        case RequestF:
     if isinstance(element, RequestF):
-            env = Env("Path", element.url.split("?")[0], None)
-#            for h in element.headers[1:]:
-#                env = Env(h.name, h.value, env)
+            env = [EnvE("Path", element.url.split("?")[0])]
             for q in element.queryString:
-                env = Env(q.name, q.value, env)
-            return env
+                env += q[1]
+            return element, env
 #        case EntryF:
     if isinstance(element, EntryF):
-            return element.request
+            return element, element.request[1]
 #        case LogF:
     if isinstance(element, LogF):
-            env = element.entries[-1]
+            env = element.entries[-1][1]
             for e in reversed(element.entries[:-1]):
-                env = Env(e.name, e.value, env)
-            return env
+                env += e[1]
+            return element, env
 #        case TopF:
     if isinstance(element, TopF):
-            return element.log
-    return None
+            return element, element.log
+    return element, []
 
 
 print(data.log.entries[2])
