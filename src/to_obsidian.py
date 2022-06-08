@@ -2,7 +2,7 @@ from serde.json import from_json
 
 from collections.abc import Mapping, Iterable
 from dataclasses import replace, is_dataclass, fields
-from harf import cata, Har, QueryStringF, HeaderF, RequestF, EntryF, LogF, TopF, HarF
+from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF
 from typing import Any, NamedTuple, Tuple, List
 from uuid import uuid4
 
@@ -77,22 +77,32 @@ def get_values(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
 #            return replace(element, name=id), [EnvE(id, value), EnvE(name, value)]
 #        case RequestF:
     if isinstance(element, RequestF):
-            env = [EnvE("Path", element.url.split("?")[0])]
+            url = element.url.split("?")[0]
+            env = []
+            queryString = []
             for q in element.queryString:
-                env += q[1]
-            return element, env
+                env = q[1] + env
+                queryString += [(q[0], list(env))]
+#                print(env)
+#                q[1] = list(env)
+            env += [EnvE("Path", url)]
+            return replace(element, url=url, headers=[], cookies=[], queryString=queryString), env
+    if isinstance(element, ResponseF):
+            return replace(element, headers=[], cookies=[]), []
 #        case EntryF:
     if isinstance(element, EntryF):
             return element, element.request[1]
 #        case LogF:
     if isinstance(element, LogF):
-            env = element.entries[-1][1]
-            for e in reversed(element.entries[:-1]):
-                env += e[1]
-            return element, env
+            env = element.entries[0][1]
+            entries = [element.entries[0]]
+            for e in element.entries:
+                env = e[1] + env
+                entries += [(e[0], list(env))]
+            return replace(element, entries=entries), env
 #        case TopF:
     if isinstance(element, TopF):
-            return element, element.log
+            return element, element.log[1]
     return element, []
 
 
