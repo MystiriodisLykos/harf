@@ -3,11 +3,13 @@ from serde.json import from_json
 from collections.abc import Mapping, Iterable
 from dataclasses import replace, is_dataclass, fields
 from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF, PostDataTextF
-from typing import Any, NamedTuple, Tuple, List, TypeVar, Generic
+from typing import Any, NamedTuple, Tuple, List, TypeVar, Generic, Callable
 from uuid import uuid4
 from urllib.parse import urlparse
 
 A = TypeVar("A")
+S = TypeVar("S")
+R = TypeVar("R")
 
 def pretty_print(obj, indent=4):
     """
@@ -55,6 +57,19 @@ def stringify(obj, indent=4, _indents=0):
     return f'{start}\n{body}\n{this_indent}{end}'
 
 
+def json_cata(algebra: Callable[[A], R], source: S) -> R:
+    def inner(element):
+        return json_cata(algebra, element)
+    if isinstance(source, list):
+        results = [inner(e) for e in source]
+    elif isinstance(source, dict):
+        results = {k: inner(e) for k, e in source.items()}
+    else:
+        results = source
+    return algebra(results)
+
+
+
 class Thunk(Generic[A]):
     _thunk_indices = []
     _thunk_values = []
@@ -81,16 +96,28 @@ class EnvE(NamedTuple):
 Env = List[EnvE]
 
 
+def json_env(json) -> Env:
+    if isinstance(json, list):
+        iterator = map(lambda e: (f"[{len(json)-e[0]-1}]", e[1]), enumerate(reversed(json)))
+    elif isinstance(json, dict):
+        iterator = map(lambda e: (f".{e[0]}", e[1]), reversed(json.items()))
+    else:
+        return [EnvE("", Thunk(json))]
+    env = []
+    for k, v in iterator:
+        sub_env = list(map(lambda e: EnvE(k + e.name, e.value), v))
+        env += sub_env
+    return EnvE("", Thunk(json)) + env
+
 def build_env(element: HarF[Env]) -> Env:
-    #if isinstance(element, PostDataTextF):
-    #     TODO: json
+    if isinstance(element, PostDataTextF):
+        return json_cata(json_env, element)
     if isinstance(element, RequestF):
         path = urlparse(element.url).path.strip("/").split("/")
         env = []
         for i, path_part in enumerate(reversed(path)):
             env += [EnvE(f"request.path[{len(path)-i-1}]", Thunk(path_part))]
-#        return element.postData + env
-        return env
+        return [EnvE(f"request.postData{e.name}", e.value) for e in element.postData] + env
     #if isinstance(element, ContentF):
     #    TODO: json
 #    if isinstance(element, ResponseF):
