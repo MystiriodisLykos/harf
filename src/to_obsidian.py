@@ -63,7 +63,7 @@ class Thunk(Generic[A]):
             thunk_index = cls._thunk_indices.index(value)
             return cls._thunk_values[thunk_index]
         except ValueError:
-            thunk = super().__new__(cls, value)
+            thunk = super().__new__(cls)
             cls._thunk_indices.append(value)
             cls._thunk_values.append(thunk)
             return thunk
@@ -88,7 +88,7 @@ def build_env(element: HarF[Env]) -> Env:
         path = urlparse(element.url).path.strip("/").split("/")
         env = []
         for i, path_part in enumerate(reversed(path)):
-            env += [EnvE(f"request.path[{i}]", Thunk(path_part))]
+            env += [EnvE(f"request.path[{len(path)-i-1}]", Thunk(path_part))]
 #        return element.postData + env
         return env
     #if isinstance(element, ContentF):
