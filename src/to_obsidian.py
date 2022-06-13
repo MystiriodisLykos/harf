@@ -2,10 +2,12 @@ from serde.json import from_json
 
 from collections.abc import Mapping, Iterable
 from dataclasses import replace, is_dataclass, fields
-from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF
-from typing import Any, NamedTuple, Tuple, List
+from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF, PostDataTextF
+from typing import Any, NamedTuple, Tuple, List, TypeVar, Generic
 from uuid import uuid4
+from urllib.parse import urlparse
 
+A = TypeVar("A")
 
 def pretty_print(obj, indent=4):
     """
@@ -53,15 +55,55 @@ def stringify(obj, indent=4, _indents=0):
     return f'{start}\n{body}\n{this_indent}{end}'
 
 
-with open("test/www.demoblaze.com_Archive [22-05-30 13-47-04].har") as file:
-    data = from_json(Har, file.read())
-
+class Thunk(Generic[A]):
+    _thunk_indices = []
+    _thunk_values = []
+    def __new__(cls, value: A):
+        try:
+            thunk_index = cls._thunk_indices.index(value)
+            return cls._thunk_values[thunk_index]
+        except ValueError:
+            thunk = super().__new__(cls, value)
+            cls._thunk_indices.append(value)
+            cls._thunk_values.append(thunk)
+            return thunk
+    def __init__(self, value: A):
+        self._value = value
+    def __eq__(self, other):
+        return self._value == other._value
+    def __repr__(self):
+        return f"Thunk({self._value!r})"
 
 class EnvE(NamedTuple):
     name: str
-    value: Any
+    value: Thunk[Any]
 
 Env = List[EnvE]
+
+
+def build_env(element: HarF[Env]) -> Env:
+    #if isinstance(element, PostDataTextF):
+    #     TODO: json
+    if isinstance(element, RequestF):
+        path = urlparse(element.url).path.strip("/").split("/")
+        env = []
+        for i, path_part in enumerate(reversed(path)):
+            env += [EnvE(f"request.path[{i}]", Thunk(path_part))]
+#        return element.postData + env
+        return env
+    #if isinstance(element, ContentF):
+    #    TODO: json
+#    if isinstance(element, ResponseF):
+#        return response.content
+    if isinstance(element, EntryF):
+        print(element.request + element.response)
+        return element.request + element.response
+    if isinstance(element, LogF):
+        return element.entries
+    if isinstance(element, TopF):
+        return element.log
+    return []
+
 
 def get_values(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
 #    match type(element):
@@ -106,4 +148,11 @@ def get_values(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
     return element, []
 
 
-pretty_print(cata(get_values, data))
+#with open("test/www.demoblaze.com_Archive [22-05-30 13-47-04].har") as file:
+with open("test/example1.har") as file:
+    data = from_json(Har, file.read())
+
+#pretty_print(cata(get_values, data))
+from pprint import pprint
+pprint(cata(build_env, data))
+
