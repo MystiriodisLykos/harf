@@ -1,5 +1,6 @@
 from serde.json import from_json
 
+from collections import defaultdict
 from collections.abc import Mapping, Iterable
 from dataclasses import replace, is_dataclass, fields
 from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF, PostDataTextF, ContentF
@@ -83,13 +84,18 @@ class Thunk(Generic[A]):
             thunk = super().__new__(cls)
             cls._thunk_indices.append(value)
             cls._thunk_values.append(thunk)
+            thunk._count = 0
+            references = []
             return thunk
     def __init__(self, value: A):
         self._value = value
+        self._count += 1
     def __eq__(self, other):
         return self._value == other._value
     def __repr__(self):
         return f"Thunk({self._value!r})|{id(self)}"
+    def __hash__(self):
+        return hash(self._value)
 
 class JsonIndexId(NamedTuple):
     e: int
@@ -138,6 +144,7 @@ Env = List[EnvE]
 
 def json_env(json) -> Env:
     original = json_fmap(json, lambda e: e[1])
+    thunk = Thunk(original)
     sub_envs = json_fmap(json, lambda e: e[0])
     if isinstance(json, list):
         ids = map(lambda e: f"[{e}]", range(len(sub_envs)))
@@ -145,12 +152,12 @@ def json_env(json) -> Env:
         ids = map(lambda e: f".{e}", original.keys())
         sub_envs = sub_envs.values()
     else:
-        return [EnvE("", Thunk(original))], Thunk(original)
+        return [EnvE("", thunk)], thunk
     env = []
     for id_, sub_env in zip(ids, sub_envs):
         sub_env = list(map(lambda e: EnvE(id_ + e.name, e.value), sub_env))
         env = sub_env + env
-    return [EnvE("", Thunk(original))] + env, Thunk(original)
+    return [EnvE("", thunk)] + env, thunk
 
 def build_env(element: HarF[Env]) -> Env:
     if isinstance(element, PostDataTextF):
@@ -178,6 +185,22 @@ def build_env(element: HarF[Env]) -> Env:
     if isinstance(element, TopF):
         return element.log
     return []
+
+
+def used_variables(env):
+    #used_variables = set(map(lambda e: e.value._value, filter(lambda e: e.value._count > 1 and "response" not in e.name, env)))
+    #sorted_env = sorted(env)
+    usages = defaultdict(list)
+    locations = defaultdict(list)
+    for reference in env:
+        if reference.value._count == 1:
+            continue
+        if "request" in reference.name:
+            usages[reference.value].append(reference.name)
+        elif reference.value in usages:
+            locations[reference.value].append(reference.name)
+    return {k: (usages[k], locations[k]) for k in usages}
+    #return {k: v for k, v in thunk_references.items() if sum(map(lambda r: "response" not in r, v)) >= 1}
 
 
 def get_values(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
@@ -229,5 +252,5 @@ with open("test/example1.har") as file:
 
 #pretty_print(cata(get_values, data))
 from pprint import pprint
-pprint(cata(build_env, data))
+pprint(used_variables(cata(build_env, data)))
 
