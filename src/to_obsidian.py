@@ -141,6 +141,32 @@ def build_env(element: HarF[Env]) -> Env:
         return element.log
     return []
 
+def build_env2(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
+#    if isinstance(element, PostDataF):
+    if isinstance(element, RequestF):
+        path = urlparse(element.url).path.strip("/").split("/")
+        env = []
+        new_path = []
+        for i, path_part in enumerate(path):
+            thunk = Thunk(path_part)
+            name = f"request.path[{i}]"
+            env = [EnvE(name, thunk)] + env
+            new_path.append(name)
+        return replace(element, url=new_path), env
+    if isinstance(element, EntryF):
+        request, request_env = element.request
+        return replace(element, request=request), request_env
+    if isinstance(element, LogF):
+        env = []
+        entries = []
+        for entry in element.entries:
+            entries.append(entry[0])
+            env.extend(entry[1])
+        return replace(element, entries=entries), env
+    if isinstance(element, TopF):
+        log, log_env = element.log
+        return replace(element, log=log), log_env
+    return element, []
 
 def used_variables(env):
     usages = defaultdict(list)
