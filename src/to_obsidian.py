@@ -2,9 +2,9 @@ from serde.json import from_json
 
 from collections import defaultdict
 from collections.abc import Mapping, Iterable
-from dataclasses import replace, is_dataclass, fields
+from dataclasses import replace, is_dataclass, fields, dataclass
 from harf import cata, Har, QueryStringF, HeaderF, RequestF, ResponseF, EntryF, LogF, TopF, HarF, PostDataTextF, ContentF
-from typing import Any, NamedTuple, Tuple, List, TypeVar, Generic, Callable, Union
+from typing import Any, NamedTuple, Tuple, List, TypeVar, Generic, Callable, Union, NewType
 from uuid import uuid4
 from urllib.parse import urlparse
 import json
@@ -51,44 +51,6 @@ class Thunk(Generic[A]):
         return f"Thunk({self._value!r})|{id(self)}"
     def __hash__(self):
         return hash(self._value)
-
-class JsonIndexId(NamedTuple):
-    e: int
-    next_: "JsonId"
-
-class JsonStringId(NamedTuple):
-    e: str
-    next_: "JsonId"
-
-JsonId = Union[JsonIndexId, JsonStringId, None]
-
-class UrlId(NamedTuple):
-    next_: JsonId
-
-class PostDataId(NamedTuple):
-    next_: JsonId
-
-class HeaderId(NamedTuple):
-    next_: JsonId
-
-class CookieId(NamedTuple):
-    next_: JsonId
-
-class QueryStringId(NamedTuple):
-    next_: JsonId
-
-class RequestId(NamedTuple):
-    e: int
-    next_: Union[UrlId, PostDataId, HeaderId, CookieId, QueryStringId]
-
-class ContentId(NamedTuple):
-    next_: JsonId
-
-class ResponseId(NamedTuple):
-    e: int
-    next_: Union[ContentId, HeaderId, CookieId]
-
-Reference = Union[RequestId, ResponseId]
 
 class EnvE(NamedTuple):
     name: str
@@ -168,6 +130,40 @@ def build_env2(element: HarF[Tuple[HarF, Env]]) -> Tuple[HarF, Env]:
         return replace(element, log=log), log_env
     return element, []
 
+IntId = NewType("IntId", int)
+StrId = NewType("StrId", str)
+PathId = NewType("PathId", IntId)
+
+class RequestId(NamedTuple):
+    path: PathId
+
+class LogId(NamedTuple):
+    entry: IntId
+    request: RequestId
+
+Id = List[Union[IntId, StrId, PathId, RequestId, LogId]]
+
+
+def flatten(element: HarF[Env]) -> Env:
+    if isinstance(element, TopF):
+        return element.log
+    if isinstance(element, LogF):
+        env = []
+        for i, entry in enumerate(element.entries):
+            env.extend(map(lambda e: (LogId(i, e[0]), e[1]), entry))
+        return env
+    if isinstance(element, EntryF):
+        return list(map(lambda e: (RequestId(e[0]), e[1]), element.request))
+    if isinstance(element, RequestF):
+        url = urlparse(element.url)
+        path = url.path.strip("/").split("/")
+        env = [(PathId(IntId(0)), f"{url.scheme}://{url.netloc}")]
+        for i, path_part in enumerate(path):
+            name = PathId(IntId(i+1))
+            env.append((name, path_part))
+        return env
+    return []
+
 def used_variables(env):
     usages = defaultdict(list)
     locations = defaultdict(list)
@@ -186,5 +182,5 @@ with open("test/example1.har") as file:
     data = from_json(Har, file.read())
 
 from pprint import pprint
-pprint(used_variables(cata(build_env, data)))
+pprint((cata(flatten, data)))
 
