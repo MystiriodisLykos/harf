@@ -79,7 +79,7 @@ class RequestPath:
 
 class ResponsePath(BodyPath):
     def __str__(self):
-        return f".response{self.next_}"
+        return f".response{super().__str__()}"
 
 
 @dataclass
