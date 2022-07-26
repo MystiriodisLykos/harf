@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from typing import Set, NamedTuple, Iterable, Any, List, NewType, Union, Protocol
 from urllib.parse import urlparse
@@ -8,6 +8,7 @@ from serde.json import from_json
 
 from harf import cata, Har, HarF, QueryStringF, RequestF, EntryF, LogF, TopF
 
+
 class Correlation(NamedTuple):
     value: Any
     names: Set[str]
@@ -15,45 +16,86 @@ class Correlation(NamedTuple):
     def __hash__(self):
         return hash(self.value)
 
+
 class Path(Protocol):
     next_: "Path"
+
+
+@dataclass
+class EndPath:
+    next_: None = field(init=False, default=None)
+
+    def __str__(self):
+        return ""
+
 
 @dataclass
 class IntPath:
     index: int
-    next_: "DataPath"
+    next_: "DataPath" = EndPath()
+
+    def __str__(self):
+        return f"[{self.index}]{self.next_}"
+
 
 @dataclass
 class StrPath:
     name: str
-    next_: "DataPath"
+    next_: "DataPath" = EndPath()
 
-DataPath = Union[IntPath, StrPath, None]
+    def __str__(self):
+        return f".{self.name}{self.next_}"
 
-class UrlPath(IntPath): pass
-class QueryPath(StrPath): pass
+
+DataPath = Union[IntPath, StrPath, EndPath]
+
+
+class UrlPath(IntPath):
+    def __str__(self):
+        return f".url{super().__str__()}"
+
+
+class QueryPath(StrPath):
+    def __str__(self):
+        return f".queryString{super().__str__()}"
+
 
 @dataclass
 class BodyPath:
     next_: DataPath
 
+    def __str__(self):
+        return f".body{self.next_}"
+
+
 @dataclass
 class RequestPath:
     next_: Union[UrlPath, QueryPath, BodyPath]
 
-class ResponsePath(BodyPath): pass
+    def __str__(self):
+        return f".request{self.next_}"
+
+
+class ResponsePath(BodyPath):
+    def __str__(self):
+        return f".response{self.next_}"
+
 
 @dataclass
 class EntryPath:
-   index: int
-   next_: Union[RequestPath, ResponsePath]
+    index: int
+    next_: Union[RequestPath, ResponsePath]
+
+    def __str__(self):
+        return f"[{self.index}]{self.next_}"
+
 
 def paths(element: HarF[List[Path]]) -> List[Path]:
     if isinstance(element, RequestF):
         path = urlparse(element.url).path.strip("/").split("/")
         paths = []
         for i in range(len(path)):
-            paths.append(RequestPath(UrlPath(i, None)))
+            paths.append(RequestPath(UrlPath(i)))
         return paths
     if isinstance(element, EntryF):
         return element.request
@@ -79,6 +121,10 @@ def paths(element: HarF[List[Path]]) -> List[Path]:
 
 
 from pprint import pprint
+
 with open("test/example1.har") as file:
     har = from_json(Har, file.read())
-    pprint(cata(paths, har))
+    paths_ = cata(paths, har)
+    pprint(paths_)
+    for p in paths_:
+        print(p)
