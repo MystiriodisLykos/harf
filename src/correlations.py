@@ -3,10 +3,11 @@ from functools import partial
 from typing import Set, NamedTuple, Iterable, Any, List, NewType, Union, Protocol
 from urllib.parse import urlparse
 from itertools import chain
+import json
 
 from serde.json import from_json
 
-from harf import cata, Har, HarF, QueryStringF, RequestF, EntryF, LogF, TopF
+from harf import cata, Har, HarF, PostDataTextF, QueryStringF, ContentF, RequestF, ResponseF, EntryF, LogF, TopF
 
 
 class Correlation(NamedTuple):
@@ -90,15 +91,33 @@ class EntryPath:
         return f"[{self.index}]{self.next_}"
 
 
+def json_paths(element) -> List[Path]:
+    if isinstance(element, dict):
+        iter_ = element.items()
+        path = StrPath
+    elif isinstance(element, list):
+        iter_ = enumerate(element)
+        path = IntPath
+    else:
+        return [EndPath()]
+    return [path(k, p) for k, v in iter_ for p in json_paths(v)]
+
+
 def paths(element: HarF[List[Path]]) -> List[Path]:
+    if isinstance(element, PostDataTextF):
+        return [RequestPath(BodyPath(r)) for r in json_paths(json.loads(element.text))]
     if isinstance(element, RequestF):
         path = urlparse(element.url).path.strip("/").split("/")
         paths = []
         for i in range(len(path)):
             paths.append(RequestPath(UrlPath(i)))
-        return paths
+        return paths + (element.postData or [])
+    if isinstance(element, ContentF):
+        return [ResponsePath(p) for p in (json_paths(json.loads(element.text)) if element.text else [])]
+    if isinstance(element, ResponseF):
+        return element.content
     if isinstance(element, EntryF):
-        return element.request
+        return element.request + element.response
     if isinstance(element, LogF):
         results = []
         for i, entry in enumerate(element.entries):
