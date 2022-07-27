@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Set, NamedTuple, Iterable, Any, List, NewType, Union, Protocol
+from typing import Set, NamedTuple, Iterable, Any, List, NewType, Union, Protocol, Dict, TypeVar, Callable, Tuple, Set
 from urllib.parse import urlparse
 from itertools import chain
 import json
@@ -9,10 +9,12 @@ from serde.json import from_json
 
 from harf import cata, Har, HarF, PostDataTextF, QueryStringF, ContentF, RequestF, ResponseF, EntryF, LogF, TopF
 
+A = TypeVar("A")
+B = TypeVar("B")
 
 class Correlation(NamedTuple):
     value: Any
-    names: Set[str]
+    names: Set["Path"]
 
     def __hash__(self):
         return hash(self.value)
@@ -90,6 +92,25 @@ class EntryPath:
     def __str__(self):
         return f"[{self.index}]{self.next_}"
 
+JSONF = Union[Dict[str, A], List[A], A]
+JSON = JSONF["JSON"]
+
+def json_fmap(f: Callable[[A], B], j: JSONF[A]) -> JSONF[B]:
+    if isinstance(j, dict):
+        return {k: f(v) for k, v in j.items()}
+    if isinstance(j, list):
+        return [f(e) for i in j]
+    return j
+
+def json_cata(f: Callable[[JSONF[A]], A], j: JSON) -> A:
+    def inner(e):
+        return json_cata(f, e)
+    return f(json_fmap(inner, j))
+
+def json_zygo(h: Callable[[JSONF[B]], B], a: Callable[[JSONF[Tuple[B, A]]], A], j: JSON) -> A:
+    def alg(x: JSONF[Tuple[B, A]]) -> A:
+        helped = h(json_fmap(lambda e: e[0], x))
+        return helped, a(x)    
 
 def json_paths(element) -> List[Path]:
     if isinstance(element, dict):
@@ -101,6 +122,10 @@ def json_paths(element) -> List[Path]:
     else:
         return [EndPath()]
     return [path(k, p) for k, v in iter_ for p in json_paths(v)]
+
+
+def json_correlations(element: JSONF[Tuple[List[Path], Set[Correlation]]]) -> Tuple[List[Path], Set[Correlation]]:
+   pass 
 
 
 def paths(element: HarF[List[Path]]) -> List[Path]:
