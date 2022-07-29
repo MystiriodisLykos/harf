@@ -46,6 +46,12 @@ def to_values(ns: List[str]) -> Dict[str, List[str]]:
     pass
 
 def json_correlations_(j: JSONF[Dict[str, List[str]]]) -> Dict[str, List[str]]:
+    """ What function do I need to turn json_paths into this?
+    json_paths :: JsonF [String] -> [String]
+    json_correlations :: JsonF {Prim, [String]} -> {Prim, [String]}
+    _ :: Prim -> [String] -> {Prim, [String]}
+      :: b -> a -> {b, a}
+    """
     if isinstance(j, dict):
         iter_ = j.items()
     elif isinstance(j, list):
