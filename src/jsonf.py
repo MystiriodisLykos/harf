@@ -26,14 +26,50 @@ def jsonf_para(a: Callable[[JSONF[Tuple[JSON, A]]], A], j: JSON) -> A:
 def jsonf_zygo(h: Callable[[JSONF[B]], B], a: Callable[[JSONF[Tuple[B, A]]], A], j: JSON) -> A:
     def inner(e):
         return h(jsonf_fmap(lambda e: e[0], e)), a(e)
-    return jsonf_cata(inner, j)[0]
+    return jsonf_cata(inner, j)[1]
 
-def json_paths(j: JSON) -> List[str]:
+def json_paths(j: JSONF[List[str]]) -> List[str]:
     if isinstance(j, dict):
         iter_ = j.items()
     elif isinstance(j, list):
         iter_ = enumerate(j)
     else:
         return [""]
-    return [str(k) + p for k, v in iter_ for p in v]
+    res = []
+    for p, ns in iter_:
+        s = [str(p) + p_ for p_ in ns]
+        res += s
+    return res
 
+def to_values(ns: List[str]) -> Dict[str, List[str]]:
+    "We don't have acess to the actual values here"
+    pass
+
+def json_correlations_(j: JSONF[Dict[str, List[str]]]) -> Dict[str, List[str]]:
+    if isinstance(j, dict):
+        iter_ = j.items()
+    elif isinstance(j, list):
+        iter_ = enumerate(j)
+    else:
+        return {j: [""]}
+    res = {}
+    for p, d in iter_:
+        for k, v in d.items():
+            u = [str(p) + p_ for p_ in v]
+            if k in res:
+                res[k] += u
+            else:
+                res[k] = u
+    return res
+
+example = {
+    "a" : 1,
+    "bs": [2, 3],
+    "cs": [4, 6],
+    "ds": [
+        {"x": 7},
+        {"y": 1}
+    ]
+}
+print(example)
+print(jsonf_cata(json_correlations_, example))
