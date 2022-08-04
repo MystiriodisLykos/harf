@@ -5,8 +5,17 @@ A = TypeVar("A")
 B = TypeVar("B")
 P = TypeVar("P")
 
-JSONF = Union[Dict[str, A], List[A], int, str, bool, float, None]
+JsonPrims = Union[int, float, str, bool, None]
+JSONF = Union[Dict[str, A], List[A], JsonPrims]
 JSON = JSONF["JSON"]
+
+class StrList(list):
+    def __str__(self):
+        return "[" + ", ".join(str(e) for e in self) + "]"
+
+class StrDict(dict):
+    def __str__(self):
+        return "{" + ", ".join(f"{k}: {str(v)}" for k, v in self.items()) + "}"
 
 @dataclass
 class IntPath(Generic[P]):
@@ -32,7 +41,7 @@ class EndPath(Generic[P]):
 
 JsonPath = Union[IntPath[P], StrPath[P], EndPath[P]]["JsonPath"]
 
-Env = Dict[str, List[JsonPath]]
+JsonEnv = Dict[JsonPrims, List[JsonPath]]
 
 def jsonf_fmap(f: Callable[[A], B], j: JSONF[A]) -> JSONF[B]:
     if isinstance(j, dict):
@@ -69,7 +78,7 @@ def json_paths(j: JSONF[List[str]]) -> List[str]:
         res += s
     return res
 
-def json_env(j: JSONF[Env]) -> Env:
+def json_env(j: JSONF[JsonEnv]) -> JsonEnv:
     """ What function do I need to turn json_paths into this?
     json_paths :: JsonF [String] -> [String]
     json_correlations :: JsonF {Prim, [String]} -> {Prim, [String]}
@@ -83,11 +92,11 @@ def json_env(j: JSONF[Env]) -> Env:
         iter_ = enumerate(j)
         path = IntPath
     else:
-        return {j: [EndPath()]}
-    res = {}
+        return {j: StrList([EndPath()])}
+    res = StrDict()
     for p, d in iter_:
         for k, v in d.items():
-            u = [path(p, p_) for p_ in v]
+            u = StrList([path(p, p_) for p_ in v])
             if k in res:
                 res[k] += u
             else:
