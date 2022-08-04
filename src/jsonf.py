@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Union, Dict, List, TypeVar, Callable, Tuple, Protocol, Generic
+import json
+import re
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -103,6 +105,24 @@ def json_env(j: JSONF[JsonEnv]) -> JsonEnv:
                 res[k] = u
     return res
 
+def replace_with_obsidian_links(env: JsonEnv, j: JSONF[JSON]) -> JSON:
+    if isinstance(j, dict):
+        return j
+    if isinstance(j, list):
+        return j
+    return f"[[{env[j][0]}|{j}]]"
+
+def to_obsidian(j: JSON) -> str:
+    print(j)
+    env = jsonf_cata(json_env, l)
+    print(env)
+    def replace(j):
+        return replace_with_obsidian_links(env, j)
+    replaced = jsonf_cata(replace, j)
+    formatted = json.dumps(replaced, indent=4)
+    formatted = re.sub("^.", "- \1", formatted)
+    return re.sub("- (\[\{\]\})", "\\\1", formatted)
+
 example = {
     "a" : 1,
     "bs": [2, 3],
@@ -112,8 +132,5 @@ example = {
         {"y": 1}
     ]
 }
-l = {"a": [1,2,3], "b": [2,4,6]}
-print(l)
-env = jsonf_cata(json_env, l)
-for v, p in env.items():
-    print(v, [str(p_) for p_ in p])
+l = [{"a": [1,2,3], "b": [2,4,6]}, {"a": "x"}]
+print(to_obsidian(l))
