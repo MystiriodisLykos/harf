@@ -1,0 +1,11 @@
+.entry li {
+    display: inherit;
+}
+
+.entry ul {
+    padding-inline-start: 2em;
+}
+
+.entry .list-collapse-indicator {
+    margin-left: 0;
+}
