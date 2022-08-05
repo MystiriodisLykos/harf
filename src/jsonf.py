@@ -8,8 +8,8 @@ B = TypeVar("B")
 P = TypeVar("P")
 
 JsonPrims = Union[int, float, str, bool, None]
-JSONF = Union[Dict[str, A], List[A], JsonPrims]
-JSON = JSONF["JSON"]
+JsonF = Union[Dict[str, A], List[A], JsonPrims]
+Json = JsonF["Json"]
 
 
 class StrList(list):
@@ -55,7 +55,7 @@ JsonPath = Union[IntPath[P], StrPath[P], EndPath[P]]["JsonPath"]
 JsonEnv = Dict[JsonPrims, List[JsonPath]]
 
 
-def jsonf_fmap(f: Callable[[A], B], j: JSONF[A]) -> JSONF[B]:
+def jsonf_fmap(f: Callable[[A], B], j: JsonF[A]) -> JsonF[B]:
     if isinstance(j, dict):
         return {k: f(v) for k, v in j.items()}
     if isinstance(j, list):
@@ -63,14 +63,14 @@ def jsonf_fmap(f: Callable[[A], B], j: JSONF[A]) -> JSONF[B]:
     return j
 
 
-def jsonf_cata(a: Callable[[JSONF[A]], A], j: JSON) -> A:
+def jsonf_cata(a: Callable[[JsonF[A]], A], j: Json) -> A:
     def inner(e):
         return jsonf_cata(a, e)
 
     return a(jsonf_fmap(inner, j))
 
 
-def jsonf_para(a: Callable[[JSONF[Tuple[JSON, A]]], A], j: JSON) -> A:
+def jsonf_para(a: Callable[[JsonF[Tuple[Json, A]]], A], j: Json) -> A:
     def inner(e):
         return jsonf_fmap(lambda x: x[0], e), a(e)
 
@@ -78,7 +78,7 @@ def jsonf_para(a: Callable[[JSONF[Tuple[JSON, A]]], A], j: JSON) -> A:
 
 
 def jsonf_zygo(
-    h: Callable[[JSONF[B]], B], a: Callable[[JSONF[Tuple[B, A]]], A], j: JSON
+    h: Callable[[JsonF[B]], B], a: Callable[[JsonF[Tuple[B, A]]], A], j: Json
 ) -> A:
     def inner(e):
         return h(jsonf_fmap(lambda e: e[0], e)), a(e)
@@ -86,7 +86,7 @@ def jsonf_zygo(
     return jsonf_cata(inner, j)[1]
 
 
-def json_paths(j: JSONF[List[str]]) -> List[str]:
+def json_paths(j: JsonF[List[str]]) -> List[str]:
     if isinstance(j, dict):
         iter_ = j.items()
     elif isinstance(j, list):
@@ -100,7 +100,7 @@ def json_paths(j: JSONF[List[str]]) -> List[str]:
     return res
 
 
-def json_env(j: JSONF[JsonEnv]) -> JsonEnv:
+def json_env(j: JsonF[JsonEnv]) -> JsonEnv:
     """What function do I need to turn json_paths into this?
     json_paths :: JsonF [String] -> [String]
     json_correlations :: JsonF {Prim, [String]} -> {Prim, [String]}
@@ -126,7 +126,7 @@ def json_env(j: JSONF[JsonEnv]) -> JsonEnv:
     return res
 
 
-def replace_with_obsidian_links(env: JsonEnv, j: JSONF[JSON]) -> JSON:
+def replace_with_obsidian_links(env: JsonEnv, j: JsonF[Json]) -> Json:
     if isinstance(j, dict):
         return j
     if isinstance(j, list):
@@ -134,7 +134,7 @@ def replace_with_obsidian_links(env: JsonEnv, j: JSONF[JSON]) -> JSON:
     return f"[[{env[j][0]}|{j}]]"
 
 
-def to_obsidian(j: JSON) -> str:
+def to_obsidian(j: Json) -> str:
     env = jsonf_cata(json_env, j)
 
     def replace(j):
