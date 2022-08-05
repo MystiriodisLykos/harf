@@ -36,7 +36,7 @@ class StrPath(Generic[P]):
 @dataclass
 class EndPath(Generic[P]):
     @property
-    def next_(self) -> "PathP":
+    def next_(self) -> "EndPath":
         return self
     def __str__(self):
         return ""
@@ -113,24 +113,11 @@ def replace_with_obsidian_links(env: JsonEnv, j: JSONF[JSON]) -> JSON:
     return f"[[{env[j][0]}|{j}]]"
 
 def to_obsidian(j: JSON) -> str:
-    print(j)
-    env = jsonf_cata(json_env, l)
-    print(env)
+    env = jsonf_cata(json_env, j)
+
     def replace(j):
         return replace_with_obsidian_links(env, j)
     replaced = jsonf_cata(replace, j)
     formatted = json.dumps(replaced, indent=4)
-    formatted = re.sub("^.", "- \1", formatted)
-    return re.sub("- (\[\{\]\})", "\\\1", formatted)
-
-example = {
-    "a" : 1,
-    "bs": [2, 3],
-    "cs": [4, 6],
-    "ds": [
-        {"x": 7},
-        {"y": 1}
-    ]
-}
-l = [{"a": [1,2,3], "b": [2,4,6]}, {"a": "x"}]
-print(to_obsidian(l))
+    formatted = re.sub(r"^(\s*)(\S)", r"\1- \2", formatted, flags=re.MULTILINE)
+    return re.sub(r"- ([\[\]\{\}])", r"- \\\1", formatted)
