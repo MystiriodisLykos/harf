@@ -70,43 +70,7 @@ def jsonf_cata(a: Callable[[JsonF[A]], A], j: Json) -> A:
     return a(jsonf_fmap(inner, j))
 
 
-def jsonf_para(a: Callable[[JsonF[Tuple[Json, A]]], A], j: Json) -> A:
-    def inner(e):
-        return jsonf_fmap(lambda x: x[0], e), a(e)
-
-    return jsonf_cata(inner, j)[1]
-
-
-def jsonf_zygo(
-    h: Callable[[JsonF[B]], B], a: Callable[[JsonF[Tuple[B, A]]], A], j: Json
-) -> A:
-    def inner(e):
-        return h(jsonf_fmap(lambda e: e[0], e)), a(e)
-
-    return jsonf_cata(inner, j)[1]
-
-
-def json_paths(j: JsonF[List[str]]) -> List[str]:
-    if isinstance(j, dict):
-        iter_ = j.items()
-    elif isinstance(j, list):
-        iter_ = enumerate(j)
-    else:
-        return [""]
-    res = []
-    for p, ns in iter_:
-        s = [str(p) + p_ for p_ in ns]
-        res += s
-    return res
-
-
 def json_env(j: JsonF[JsonEnv]) -> JsonEnv:
-    """What function do I need to turn json_paths into this?
-    json_paths :: JsonF [String] -> [String]
-    json_correlations :: JsonF {Prim, [String]} -> {Prim, [String]}
-    _ :: Prim -> [String] -> {Prim, [String]}
-      :: b -> a -> {b, a}
-    """
     if isinstance(j, dict):
         iter_ = j.items()
         path = StrPath
