@@ -395,13 +395,29 @@ Har = TopF[Log]
 
 """
 example = Entry(
+    "dafsd",
     1,
     Request(
         "GET",
         "/api",
-        [QueryString("q1", "v1"), QueryString("q2", "v2")],
+        "1.1",
         [Cookie("c", "c1")],
+        [],
+        [QueryString("q1", "v1"), QueryString("q2", "v2")],
+        0,
+        0,
     ),
+    Response(
+        200,
+        "OK",
+        "1.1",
+        [],
+        [],
+        ContentF(0, ""),
+        "",
+    ),
+    Cache(None, None),
+    Timings(1, 1, 1),
 )
 
 
