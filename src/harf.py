@@ -209,12 +209,17 @@ class RequestF(Generic[A, B, C, D]):
         h: F[C, Y],
         i: F[D, Z],
     ) -> "RequestF[W, X, Y, Z]":
+        post_data = self.postData
+        if post_data is not None:
+            new_post_data: Optional[Z] = i(post_data)
+        else:
+            new_post_data = post_data
         return replace(
             self,  # type: ignore[arg-type]
             cookies=list(map(f, self.cookies)),
             headers=list(map(g, self.headers)),
             queryString=list(map(h, self.queryString)),
-            postData=i(self.postData) if self.postData != None else None,
+            postData=new_post_data,
         )
 
 
@@ -313,11 +318,16 @@ class LogF(Generic[A, B, C, D]):
         h: F[C, Y],
         i: F[D, Z],
     ) -> "LogF[W, X, Y, Z]":
+        browser = self.browser
+        if browser is None:
+            new_browser: Optional[Y] = browser
+        else:
+            new_browser = h(browser)
         return replace(
             self,  # type: ignore[arg-type]
             creator=f(self.creator),
             entries=list(map(g, self.entries)),
-            browser=h(self.browser) if self.browser != None else None,
+            browser=new_browser,
             pages=list(map(i, self.pages)),
         )
 
