@@ -26,7 +26,7 @@ dint = partial(field, default=-1)
 
 @serde
 @dataclass
-class TimingsF(Generic[A, B, C, D]):
+class TimingsF:
     send: int
     wait: int
     receive: int
@@ -36,49 +36,31 @@ class TimingsF(Generic[A, B, C, D]):
     ssl: oint = dint()
     comment: ostr = ""
 
-    def nmap(
-        self: "TimingsF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "TimingsF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "TimingsF") -> "TimingsF":
+        return self
 
 
 @serde
 @dataclass
-class BeforeAfterRequestF(Generic[A, B, C, D]):
+class BeforeAfterRequestF:
     lastAccess: str
     eTag: str
     hitCount: int
     expires: ostr = None
     commint: ostr = ""
 
-    def nmap(
-        self: "BeforeAfterRequestF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "BeforeAfterRequestF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "BeforeAfterRequestF") -> "BeforeAfterRequestF":
+        return self
 
 
 @serde
 @dataclass
-class CacheF(Generic[A, B, C, D]):
+class CacheF(Generic[A, B]):
     beforeRequest: Optional[A] = None
     afterRequest: Optional[B] = None
     comment: ostr = ""
 
-    def nmap(
-        self: "CacheF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "CacheF[W, X, Y, Z]":
+    def nmap(self: "CacheF[A, B]", f: F[A, W], g: F[B, X]) -> "CacheF[W, X]":
         return CacheF(
             f(self.beforeRequest) if self.beforeRequest else None,
             g(self.afterRequest) if self.afterRequest else None,
@@ -87,7 +69,7 @@ class CacheF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class ContentF(Generic[A, B, C, D]):
+class ContentF:
     size: int
     mimeType: str
     compression: oint = None
@@ -95,19 +77,13 @@ class ContentF(Generic[A, B, C, D]):
     encoding: ostr = ""
     comment: ostr = ""
 
-    def nmap(
-        self: "ContentF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "ContentF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "ContentF") -> "ContentF":
+        return self
 
 
 @serde
 @dataclass
-class ResponseF(Generic[A, B, C, D]):
+class ResponseF(Generic[A, B, C]):
     status: int
     statusText: str
     httpVersion: str
@@ -120,12 +96,11 @@ class ResponseF(Generic[A, B, C, D]):
     comment: ostr = ""
 
     def nmap(
-        self: "ResponseF[A, B, C, D]",
+        self: "ResponseF[A, B, C]",
         f: F[A, W],
         g: F[B, X],
         h: F[C, Y],
-        i: F[D, Z],
-    ) -> "ResponseF[W, X, Y, Z]":
+    ) -> "ResponseF[W, X, Y]":
         return replace(
             self,  # type: ignore[arg-type]
             cookies=list(map(f, self.cookies)),
@@ -136,37 +111,25 @@ class ResponseF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class ParamF(Generic[A, B, C, D]):
+class ParamF:
     name: str
     value: ostr = None
     fileName: ostr = None
     contentType: ostr = None
     comment: ostr = ""
 
-    def nmap(
-        self: "ParamF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "ParamF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "ParamF") -> "ParamF":
+        return self
 
 
 @serde
 @dataclass
-class PostDataParamF(Generic[A, B, C, D]):
+class PostDataParamF(Generic[A]):
     mimeType: str
     params: List[A]
     comment: ostr = ""
 
-    def nmap(
-        self: "PostDataParamF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "PostDataParamF[W, X, Y, Z]":
+    def nmap(self: "PostDataParamF[A]", f: F[A, W]) -> "PostDataParamF[W]":
         return replace(
             self,  # type: ignore[arg-type]
             params=list(map(f, self.params)),
@@ -175,61 +138,43 @@ class PostDataParamF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class PostDataTextF(Generic[A, B, C, D]):
+class PostDataTextF:
     mimeType: str
     text: str
     comment: ostr = ""
 
-    def nmap(
-        self: "PostDataTextF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "PostDataTextF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "PostDataTextF") -> "PostDataTextF":
+        return self
 
 
-PostDataF = Union[PostDataTextF[A, B, C, D], PostDataParamF[A, B, C, D]]
+PostDataF = Union[PostDataTextF, PostDataParamF[A]]
 
 
 @serde
 @dataclass
-class QueryStringF(Generic[A, B, C, D]):
+class QueryStringF:
     name: str
     value: str
     comment: ostr = ""
 
-    def nmap(
-        self: "QueryStringF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "QueryStringF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "QueryStringF") -> "QueryStringF":
+        return self
 
 
 @serde
 @dataclass
-class HeaderF(Generic[A, B, C, D]):
+class HeaderF:
     name: str
     value: str
     comment: ostr = ""
 
-    def nmap(
-        self: "HeaderF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "HeaderF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "HeaderF") -> "HeaderF":
+        return self
 
 
 @serde
 @dataclass
-class CookieF(Generic[A, B, C, D]):
+class CookieF:
     name: str
     value: str
     path: ostr = None
@@ -239,14 +184,8 @@ class CookieF(Generic[A, B, C, D]):
     secure: obool = None
     comment: ostr = ""
 
-    def nmap(
-        self: "CookieF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "CookieF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "CookieF") -> "CookieF":
+        return self
 
 
 @serde
@@ -310,37 +249,25 @@ class EntryF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class PageTimingsF(Generic[A, B, C, D]):
+class PageTimingsF:
     onContentLoad: oint = -1
     onLoad: oint = -1
     comment: ostr = ""
 
-    def nmap(
-        self: "PageTimingsF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "PageTimingsF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "PageTimingsF") -> "PageTimingsF":
+        return self
 
 
 @serde
 @dataclass
-class PageF(Generic[A, B, C, D]):
+class PageF(Generic[A]):
     startedDateTime: str
     id: str
     title: str
     pageTimings: A
     comment: ostr = ""
 
-    def nmap(
-        self: "PageF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "PageF[W, X, Y, Z]":
+    def nmap(self: "PageF[A]", f: F[A, W]) -> "PageF[W]":
         return replace(
             self,  # type: ignore[arg-type]
             pageTimings=f(self.pageTimings),
@@ -349,36 +276,24 @@ class PageF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class BrowserF(Generic[A, B, C, D]):
+class BrowserF:
     name: str
     version: str
     comment: ostr = ""
 
-    def nmap(
-        self: "BrowserF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "BrowserF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "BrowserF") -> "BrowserF":
+        return self
 
 
 @serde
 @dataclass
-class CreatorF(Generic[A, B, C, D]):
+class CreatorF:
     name: str
     version: str
     comment: ostr = ""
 
-    def nmap(
-        self: "CreatorF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "CreatorF[W, X, Y, Z]":
-        return self  # type: ignore[return-value]
+    def nmap(self: "CreatorF") -> "CreatorF":
+        return self
 
 
 @serde
@@ -409,66 +324,64 @@ class LogF(Generic[A, B, C, D]):
 
 @serde
 @dataclass
-class TopF(Generic[A, B, C, D]):
+class TopF(Generic[A]):
     log: A
 
-    def nmap(
-        self: "TopF[A, B, C, D]",
-        f: F[A, W],
-        g: F[B, X],
-        h: F[C, Y],
-        i: F[D, Z],
-    ) -> "TopF[W, X, Y, Z]":
+    def nmap(self: "TopF[A]", f: F[A, W]) -> "TopF[W]":
         return TopF(f(self.log))
 
 
 HarF = Union[
-    TimingsF[A, A, A, A],
-    BeforeAfterRequestF[A, A, A, A],
-    CacheF[A, A, A, A],
-    ContentF[A, A, A, A],
-    ResponseF[A, A, A, A],
-    ParamF[A, A, A, A],
-    PostDataF[A, A, A, A],
-    QueryStringF[A, A, A, A],
-    HeaderF[A, A, A, A],
-    CookieF[A, A, A, A],
+    TimingsF,
+    BeforeAfterRequestF,
+    CacheF[A, A],
+    ContentF,
+    ResponseF[A, A, A],
+    ParamF,
+    PostDataF[A],
+    QueryStringF,
+    HeaderF,
+    CookieF,
     RequestF[A, A, A, A],
     EntryF[A, A, A, A],
-    PageTimingsF[A, A, A, A],
-    PageF[A, A, A, A],
-    BrowserF[A, A, A, A],
-    CreatorF[A, A, A, A],
+    PageTimingsF,
+    PageF[A],
+    BrowserF,
+    CreatorF,
     LogF[A, A, A, A],
-    TopF[A, A, A, A],
+    TopF,
 ]
 
 
-def cata(a: Callable[[HarF[A]], A], h: HarF) -> A:
+FHar = HarF["FHar"]  # type: ignore[misc]
+
+
+def cata(a: Callable[[HarF[A]], A], h: FHar) -> A:
     def inner_cata(e: HarF) -> A:
         return cata(a, e)
 
-    return a(h.nmap(inner_cata, inner_cata, inner_cata, inner_cata))
+    fs = [inner_cata] * len(getattr(h, "__parameters__", []))
+    return a(h.nmap(*fs))
 
 
-Timings = TimingsF[Any, Any, Any, Any]
-BeforeAfterRequest = BeforeAfterRequestF[Any, Any, Any, Any]
-Cache = CacheF[BeforeAfterRequest, BeforeAfterRequest, Any, Any]
-Content = ContentF[Any, Any, Any, Any]
-Header = HeaderF[Any, Any, Any, Any]
-Cookie = CookieF[Any, Any, Any, Any]
-Response = ResponseF[Cookie, Header, Content, Any]
-Param = ParamF[Any, Any, Any, Any]
-PostData = PostDataF[Param, Any, Any, Any]
-QueryString = QueryStringF[Any, Any, Any, Any]
+Timings = TimingsF
+BeforeAfterRequest = BeforeAfterRequestF
+Cache = CacheF[BeforeAfterRequest, BeforeAfterRequest]
+Content = ContentF
+Header = HeaderF
+Cookie = CookieF
+Response = ResponseF[Cookie, Header, Content]
+Param = ParamF
+PostData = PostDataF[Param]
+QueryString = QueryStringF
 Request = RequestF[Cookie, Header, QueryString, PostData]
 Entry = EntryF[Request, Response, Cache, Timings]
-PageTimings = PageTimingsF[Any, Any, Any, Any]
-Page = PageF[PageTimings, Any, Any, Any]
-Browser = BrowserF[Any, Any, Any, Any]
-Creator = CreatorF[Any, Any, Any, Any]
+PageTimings = PageTimingsF
+Page = PageF[PageTimings]
+Browser = BrowserF
+Creator = CreatorF
 Log = LogF[Creator, Entry, Browser, Page]
-Har = TopF[Log, Any, Any, Any]
+Har = TopF[Log]
 
 """
 example = Entry(
