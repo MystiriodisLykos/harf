@@ -9,50 +9,10 @@ P = TypeVar("P")
 
 JsonPrims = Union[int, float, str, bool, None]
 JsonF = Union[Dict[str, A], List[A], JsonPrims]
+
 Json = JsonF["Json"]
 
-
-class StrList(list):
-    def __str__(self):
-        return "[" + ", ".join(str(e) for e in self) + "]"
-
-
-class StrDict(dict):
-    def __str__(self):
-        return "{" + ", ".join(f"{k}: {str(v)}" for k, v in self.items()) + "}"
-
-
-@dataclass
-class IntPath(Generic[P]):
-    index: int
-    next_: P
-
-    def __str__(self):
-        return f"[{self.index}]{self.next_}"
-
-
-@dataclass
-class StrPath(Generic[P]):
-    key: str
-    next_: P
-
-    def __str__(self):
-        return f".{self.key}{self.next_}"
-
-
-@dataclass
-class EndPath(Generic[P]):
-    @property
-    def next_(self) -> "EndPath":
-        return self
-
-    def __str__(self):
-        return ""
-
-
-JsonPath = Union[IntPath[P], StrPath[P], EndPath[P]]["JsonPath"]
-
-JsonEnv = Dict[JsonPrims, List[JsonPath]]
+# JsonEnv = Dict[JsonPrims, List[JsonPath]]
 
 
 def jsonf_fmap(f: Callable[[A], B], j: JsonF[A]) -> JsonF[B]:
@@ -70,6 +30,7 @@ def jsonf_cata(a: Callable[[JsonF[A]], A], j: Json) -> A:
     return a(jsonf_fmap(inner, j))
 
 
+"""
 def json_env(j: JsonF[JsonEnv]) -> JsonEnv:
     if isinstance(j, dict):
         iter_ = j.items()
@@ -108,3 +69,4 @@ def to_obsidian(j: Json) -> str:
     formatted = json.dumps(replaced, indent=4)
     formatted = re.sub(r"^(\s*)(\S)", r"\1- \2", formatted, flags=re.MULTILINE)
     return re.sub(r"- ([\[\]\{\}])", r"- \\\1", formatted)
+"""
