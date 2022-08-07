@@ -110,7 +110,7 @@ class EntryPath:
     next_: Union[RequestPath, ResponsePath]
 
     def __str__(self):
-        return f"[{self.index}]{self.next_}"
+        return f"entry_{self.index}{self.next_}"
 
 Env = Dict[JsonPrims, List[Path]]
 
