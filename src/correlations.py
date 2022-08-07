@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import partial
 from typing import (
@@ -35,7 +36,7 @@ from harf import (
     LogF,
     TopF,
 )
-from jsonf import jsonf_cata, JsonF
+from jsonf import jsonf_cata, JsonF, JsonPrims
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -69,7 +70,7 @@ class EndPath:
         return ""
 
 
-DataPath = Union[IntPath[A], StrPath[A], EndPath]["DataPath"]  # type: ignore[misc]
+DataPath = Union[IntPath[A], StrPath[A], EndPath]["DataPath"]  # type: ignore[index]
 
 
 class UrlPath(IntPath[DataPath]):
@@ -111,58 +112,82 @@ class EntryPath:
     def __str__(self):
         return f"[{self.index}]{self.next_}"
 
+Env = Dict[JsonPrims, List[Path]]
 
-def json_path(element: JsonF[List[DataPath]]) -> List[DataPath]:
+def _json_env(element: JsonF[Env]) -> Env:
     if isinstance(element, dict):
         iter_ = element.items()
-        path = StrPath
+        mk_path = StrPath
     elif isinstance(element, list):
         iter_ = enumerate(element)
-        path = IntPath
+        mk_path = IntPath
     else:
-        return [EndPath()]
-    res = []
-    for p, v in iter_:
-        res += [path(p, p_) for p_ in v]
-    return res
+        return {element: [EndPath()]}
+    res = defaultdict(list)
+    for path, envs in iter_:
+        for prim, paths in envs.items():
+           res[prim] += [mk_path(path, p) for p in paths]
+    return dict(res)
 
 
-json_paths = partial(jsonf_cata, json_path)
+json_env = partial(jsonf_cata, _json_env)
 
 
-def paths(element: HarF[List[Path]]) -> List[Path]:
+def env(element: HarF[Env]) -> Env:
     if isinstance(element, PostDataTextF):
-        return [RequestPath(BodyPath(r)) for r in json_paths(json.loads(element.text))]
+        post_env = json_env(json.loads(element.text))
+        for prim, paths in post_env.items():
+            post_env[prim] = [RequestPath(BodyPath(p)) for p in paths]
+        return post_env
     if isinstance(element, RequestF):
-        path = urlparse(element.url).path.strip("/").split("/")
-        paths = []
-        for i in range(len(path)):
-            paths.append(RequestPath(UrlPath(i, EndPath())))
-        return paths + (element.postData or [])
+        url_path = urlparse(element.url).path.strip("/").split("/")
+        request_env = element.postData or {}
+        for i, p in enumerate(url_path):
+            path = [RequestPath(UrlPath(i, EndPath()))]
+            if p.isdigit():
+                p = int(p)
+            if p in request_env:
+                request_env[p] = path + request_env[p]
+            else:
+                request_env[p] = path
+        return request_env
     if isinstance(element, ContentF):
-        return [
-            ResponsePath(p)
-            for p in (json_paths(json.loads(element.text)) if element.text else [])
-        ]
+        content_env = json_env(json.loads(element.text)) if element.text else {}
+        for prim, paths in content_env.items():
+            content_env[prim] = [ResponsePath(p) for p in paths]
+        return content_env
     if isinstance(element, ResponseF):
         return element.content
     if isinstance(element, EntryF):
-        return element.request + element.response
+        entry_env = element.request
+        for prim, paths in element.response.items():
+            if prim in entry_env:
+                entry_env[prim] += paths
+            else:
+                entry_env[prim] = paths
+        return entry_env
     if isinstance(element, LogF):
-        results = []
+        log_env = defaultdict(list)
         for i, entry in enumerate(element.entries):
-            results.extend(map(lambda e: EntryPath(i, e), entry))
-        return results
+            for prim, paths in entry.items():
+                log_env[prim] += [EntryPath(i, p) for p in paths]
+        return dict(log_env )
     if isinstance(element, TopF):
         return element.log
-    return []
+    return {}
 
 
 from pprint import pprint
 
 with open("test/example1.har") as file:
     har = from_json(Har, file.read())
-    paths_ = cata(paths, har)
-    pprint(paths_)
-    for p in paths_:
-        print(p)
+    env_ = cata(env, har)
+    pprint(env_)
+    for prim, paths in env_.items():
+        print(prim)
+        pprint(list(map(str, paths)))
+        print()
+
+import code
+
+code.interact(local=vars())
