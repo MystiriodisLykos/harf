@@ -114,6 +114,13 @@ class EntryPath:
 
 Env = Dict[JsonPrims, List[Path]]
 
+class Env(Dict[JsonPrims, List[Path]]):
+    def map_paths(self, f: Callable[[Path], Path]) -> "Env":
+        res = {}
+        for p, ps in self.items():
+            res[p] = list(map(f, ps))
+        return Env(res)
+
 def _json_env(element: JsonF[Env]) -> Env:
     if isinstance(element, dict):
         iter_ = element.items()
@@ -122,12 +129,12 @@ def _json_env(element: JsonF[Env]) -> Env:
         iter_ = enumerate(element)
         mk_path = IntPath
     else:
-        return {element: [EndPath()]}
+        return Env({element: [EndPath()]})
     res = defaultdict(list)
     for path, envs in iter_:
         for prim, paths in envs.items():
            res[prim] += [mk_path(path, p) for p in paths]
-    return dict(res)
+    return Env(res)
 
 
 json_env = partial(jsonf_cata, _json_env)
@@ -135,13 +142,10 @@ json_env = partial(jsonf_cata, _json_env)
 
 def env(element: HarF[Env]) -> Env:
     if isinstance(element, PostDataTextF):
-        post_env = json_env(json.loads(element.text))
-        for prim, paths in post_env.items():
-            post_env[prim] = [RequestPath(BodyPath(p)) for p in paths]
-        return post_env
+        return json_env(json.loads(element.text)).map_paths(lambda p: RequestPath(BodyPath(p)))
     if isinstance(element, RequestF):
         url_path = urlparse(element.url).path.strip("/").split("/")
-        request_env = element.postData or {}
+        request_env = element.postData or Env()
         for i, p in enumerate(url_path):
             path = [RequestPath(UrlPath(i, EndPath()))]
             if p.isdigit():
@@ -152,10 +156,12 @@ def env(element: HarF[Env]) -> Env:
                 request_env[p] = path
         return request_env
     if isinstance(element, ContentF):
-        content_env = json_env(json.loads(element.text)) if element.text else {}
-        for prim, paths in content_env.items():
-            content_env[prim] = [ResponsePath(p) for p in paths]
-        return content_env
+        content = element.text
+        if content != "":
+            content_env = json_env(json.loads(element.text))
+        else:
+            content_env = Env()
+        return content_env.map_paths(lambda p: ResponsePath(p))
     if isinstance(element, ResponseF):
         return element.content
     if isinstance(element, EntryF):
@@ -171,10 +177,10 @@ def env(element: HarF[Env]) -> Env:
         for i, entry in enumerate(element.entries):
             for prim, paths in entry.items():
                 log_env[prim] += [EntryPath(i, p) for p in paths]
-        return dict(log_env )
+        return Env(log_env)
     if isinstance(element, TopF):
         return element.log
-    return {}
+    return Env()
 
 
 from pprint import pprint
@@ -190,4 +196,4 @@ with open("test/example1.har") as file:
 
 import code
 
-code.interact(local=vars())
+# code.interact(local=vars())
