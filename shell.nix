@@ -16,24 +16,30 @@ let
         ];
         doCheck = false;
     };
+    harf = callPackage ./harf.nix {
+        buildPythonPackage = python3Packages.buildPythonPackage;
+        pyserde = pyserde;
+    };
     mypython = python3.buildEnv.override {
         extraLibs = with python3Packages; [
             mypy
             black
-            pyserde
+            harf
         ];
     };
 
-    myvim = let
-            common_vim = import /etc/nixos/common_vim.nix;
-        in (vim_configurable.override { python = python3; }).customize {
-            name = common_vim.name;
-            vimrcConfig.customRC = common_vim.vimrcConfig.customRC + ''
+    myvim = (vim_configurable.override { python = python3; }).customize {
+            name = "vim";
+            vimrcConfig.customRC = ''
                 set foldmethod=syntax
                 nnoremap <space> za
 
                 set encoding=utf-8
                 set nospell
+		set number relativenumber
+		syntax on
+
+		set tabstop=8 softtabstop=0 expandtab shiftwidth=4 smarttab
             '';
         };
 in
