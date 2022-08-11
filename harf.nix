@@ -1,4 +1,4 @@
-{ lib, buildPythonPackage, pyserde }:
+{ lib, buildPythonPackage, pyserde, click }:
 
 buildPythonPackage rec {
     pname = "harf";
@@ -6,5 +6,5 @@ buildPythonPackage rec {
     
     src = ./src;
 
-    propagatedBuildInputs = [ pyserde ];
+    propagatedBuildInputs = [ pyserde click ];
 }

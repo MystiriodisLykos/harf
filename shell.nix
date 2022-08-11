@@ -19,6 +19,7 @@ let
     harf = callPackage ./harf.nix {
         buildPythonPackage = python3Packages.buildPythonPackage;
         pyserde = pyserde;
+        click = python3Packages.click;
     };
     mypython = python3.buildEnv.override {
         extraLibs = with python3Packages; [
