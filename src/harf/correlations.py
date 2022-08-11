@@ -23,7 +23,7 @@ import json
 
 from serde.json import from_json
 
-from harf import (
+from harf.harf import (
     cata,
     Har,
     HarF,
@@ -36,7 +36,7 @@ from harf import (
     LogF,
     TopF,
 )
-from jsonf import jsonf_cata, JsonF, JsonPrims
+from harf.jsonf import jsonf_cata, JsonF, JsonPrims
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -182,7 +182,10 @@ def env(element: HarF[Env]) -> Env:
         return element.log
     return Env()
 
+def mk_env(h: Har) -> Env:
+    return cata(env, h)
 
+"""
 from pprint import pprint
 
 with open("test/example1.har") as file:
@@ -197,3 +200,4 @@ with open("test/example1.har") as file:
 import code
 
 # code.interact(local=vars())
+"""
