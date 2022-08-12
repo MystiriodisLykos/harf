@@ -25,6 +25,7 @@ from serde.json import from_json
 
 from harf.harf import (
     cata,
+    harf,
     Har,
     HarF,
     PostDataTextF,
@@ -112,7 +113,9 @@ class EntryPath:
     def __str__(self):
         return f"entry_{self.index}{self.next_}"
 
+
 Env = Dict[JsonPrims, List[Path]]
+
 
 class Env(Dict[JsonPrims, List[Path]]):
     def map_paths(self, f: Callable[[Path], Path]) -> "Env":
@@ -120,6 +123,7 @@ class Env(Dict[JsonPrims, List[Path]]):
         for p, ps in self.items():
             res[p] = list(map(f, ps))
         return Env(res)
+
 
 def _json_env(element: JsonF[Env]) -> Env:
     if isinstance(element, dict):
@@ -133,64 +137,78 @@ def _json_env(element: JsonF[Env]) -> Env:
     res = defaultdict(list)
     for path, envs in iter_:
         for prim, paths in envs.items():
-           res[prim] += [mk_path(path, p) for p in paths]
+            res[prim] += [mk_path(path, p) for p in paths]
     return Env(res)
 
 
 json_env = partial(jsonf_cata, _json_env)
 
 
-def env(element: HarF[Env]) -> Env:
-    if isinstance(element, PostDataTextF):
-        return json_env(json.loads(element.text)).map_paths(lambda p: RequestPath(BodyPath(p)))
-    if isinstance(element, RequestF):
-        url_path = urlparse(element.url).path.strip("/").split("/")
-        request_env = element.postData or Env()
-        for i, p in enumerate(url_path):
-            path = [RequestPath(UrlPath(i, EndPath()))]
-            if p.isdigit():
-                p = int(p)
-            if p in request_env:
-                request_env[p] = path + request_env[p]
-            else:
-                request_env[p] = path
-        return request_env
-    if isinstance(element, ContentF):
-        content = element.text
-        if content != "":
-            content_env = json_env(json.loads(element.text))
-        else:
-            content_env = Env()
-        return content_env.map_paths(lambda p: ResponsePath(p))
-    if isinstance(element, ResponseF):
-        return element.content
-    if isinstance(element, EntryF):
-        entry_env = element.request
-        for prim, paths in element.response.items():
-            if prim in entry_env:
-                entry_env[prim] += paths
-            else:
-                entry_env[prim] = paths
-        return entry_env
-    if isinstance(element, LogF):
-        log_env = defaultdict(list)
-        for i, entry in enumerate(element.entries):
-            for prim, paths in entry.items():
-                log_env[prim] += [EntryPath(i, p) for p in paths]
-        return Env(log_env)
-    if isinstance(element, TopF):
-        return element.log
-    return Env()
+def post_data_env(pd: PostDataTextF) -> Env:
+    return json_env(json.loads(pd.text)).map_paths(lambda p: RequestPath(BodyPath(p)))
 
-def mk_env(h: Har) -> Env:
-    return cata(env, h)
+
+def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
+    url_path = urlparse(r.url).path.strip("/").split("/")
+    request_env = r.postData or Env()
+    for i, p in enumerate(url_path):
+        path = [RequestPath(UrlPath(i, EndPath()))]
+        if p.isdigit():
+            p = int(p)
+        if p in request_env:
+            request_env[p] = path + request_env[p]
+        else:
+            request_env[p] = path
+    return request_env
+
+
+def content_env(c: ContentF) -> Env:
+    content = c.text
+    if content != "":
+        content_env = json_env(json.loads(c.text))
+    else:
+        content_env = Env()
+    return content_env.map_paths(lambda p: ResponsePath(p))
+
+
+def response_env(r: ResponseF[Env, Env, Env]) -> Env:
+    return r.content
+
+
+def entry_env(e: EntryF[Env, Env, Env, Env]) -> Env:
+    entry_env = e.request
+    for prim, paths in e.response.items():
+        if prim in entry_env:
+            entry_env[prim] += paths
+        else:
+            entry_env[prim] = paths
+    return entry_env
+
+
+def log_env(l: LogF[Env, Env, Env, Env]) -> Env:
+    log_env = defaultdict(list)
+    for i, entry in enumerate(l.entries):
+        for prim, paths in entry.items():
+            log_env[prim] += [EntryPath(i, p) for p in paths]
+    return Env(log_env)
+
+
+mk_env = harf(
+    post_data=post_data_env,
+    content=content_env,
+    response=response_env,
+    request=request_env,
+    entry=entry_env,
+    log=log_env,
+    default=Env(),
+)
 
 """
 from pprint import pprint
 
-with open("test/example1.har") as file:
+with open("src/tests/example1.har") as file:
     har = from_json(Har, file.read())
-    env_ = cata(env, har)
+    env_ = mk_env(har)
     pprint(env_)
     for prim, paths in env_.items():
         print(prim)

@@ -26,4 +26,3 @@ def jsonf_cata(a: Callable[[JsonF[A]], A], j: Json) -> A:
         return jsonf_cata(a, e)
 
     return a(jsonf_fmap(inner, j))
-
