@@ -14,6 +14,8 @@ from harf.correlations import mk_env
 @click.option("--interactive", "-i", is_flag=True, default=False)
 @click.option("--diffable", "-d", is_flag=True, default=False)
 def correlations(har_file, interactive, diffable):
+    # todo: add filters for number of references
+    # todo: add verbose to show url instead of entry_{i}
     har = from_json(Har, har_file.read())
     env = mk_env(har)
     if interactive:
