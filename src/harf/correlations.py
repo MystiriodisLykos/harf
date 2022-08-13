@@ -30,6 +30,7 @@ from harf.harf import (
     HarF,
     PostDataTextF,
     QueryStringF,
+    HeaderF,
     ContentF,
     RequestF,
     ResponseF,
@@ -84,6 +85,11 @@ class QueryPath(StrPath[DataPath]):
         return f".queryString{super().__str__()}"
 
 
+class HeaderPath(StrPath[DataPath]):
+    def __str__(self):
+        return f".header{super().__str__()}"
+
+
 @dataclass
 class BodyPath:
     next_: DataPath
@@ -94,15 +100,18 @@ class BodyPath:
 
 @dataclass
 class RequestPath:
-    next_: Union[UrlPath, QueryPath, BodyPath]
+    next_: Union[UrlPath, QueryPath, BodyPath, HeaderPath]
 
     def __str__(self):
         return f".request{self.next_}"
 
 
-class ResponsePath(BodyPath):
+@dataclass
+class ResponsePath:
+    next_: Union[HeaderPath, BodyPath]
+
     def __str__(self):
-        return f".response{super().__str__()}"
+        return f".response{self.next_}"
 
 
 @dataclass
@@ -122,6 +131,14 @@ class Env(Dict[JsonPrims, List[Path]]):
         res = {}
         for p, ps in self.items():
             res[p] = list(map(f, ps))
+        return Env(res)
+
+    def __add__(self, other):
+        res = defaultdict(list)
+        for p, ps in self:
+            res[p] += ps
+        for p, ps in other:
+            res[p] += ps
         return Env(res)
 
 
@@ -148,6 +165,10 @@ def post_data_env(pd: PostDataTextF) -> Env:
     return json_env(json.loads(pd.text)).map_paths(lambda p: RequestPath(BodyPath(p)))
 
 
+def header_env(h: HeaderF) -> Env:
+    return Env({h.value: RequestPath(HeaderPath(h.name, EndPath()))})
+
+
 def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
     url_path = urlparse(r.url).path.strip("/").split("/")
     request_env = r.postData or Env()
@@ -159,16 +180,19 @@ def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
             request_env[p] = path + request_env[p]
         else:
             request_env[p] = path
-    return request_env
+    return sum(r.headers, request_env)
 
 
 def content_env(c: ContentF) -> Env:
     content = c.text
-    if content != "":
-        content_env = json_env(json.loads(c.text))
-    else:
-        content_env = Env()
-    return content_env.map_paths(lambda p: ResponsePath(p))
+    try:
+        if content != "":
+            content_env = json_env(json.loads(content))
+        else:
+            content_env = Env()
+        return content_env.map_paths(lambda p: ResponsePath(p))
+    except:
+        print(content)
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
@@ -195,6 +219,7 @@ def log_env(l: LogF[Env, Env, Env, Env]) -> Env:
 
 mk_env = harf(
     post_data=post_data_env,
+    header=header_env,
     content=content_env,
     response=response_env,
     request=request_env,
