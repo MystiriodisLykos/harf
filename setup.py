@@ -5,7 +5,7 @@ setup(
     version="0.0.1",
     description="Tools for modifying har files",
     author="Brendan DeLeeuw",
-    packages=find_packages() + find_namespace_packages(),
+    packages=["harf"],
     install_requires=[
         "Click",
         "pyserde",
