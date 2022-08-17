@@ -13,7 +13,8 @@ from harf.correlations import mk_env
 @click.argument("har-file", type=click.File("r"))
 @click.option("--interactive", "-i", is_flag=True, default=False)
 @click.option("--diffable", "-d", is_flag=True, default=False)
-def correlations(har_file, interactive, diffable):
+@click.option("--headers", "-d", is_flag=True, default=False)
+def correlations(har_file, interactive, diffable, headers):
     # todo: add filters for number of references
     # todo: add verbose to show url instead of entry_{i}
     har = from_json(Har, har_file.read())

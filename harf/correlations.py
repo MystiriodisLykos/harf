@@ -227,20 +227,3 @@ mk_env = harf(
     log=log_env,
     default=Env(),
 )
-
-"""
-from pprint import pprint
-
-with open("src/tests/example1.har") as file:
-    har = from_json(Har, file.read())
-    env_ = mk_env(har)
-    pprint(env_)
-    for prim, paths in env_.items():
-        print(prim)
-        pprint(list(map(str, paths)))
-        print()
-
-import code
-
-# code.interact(local=vars())
-"""
