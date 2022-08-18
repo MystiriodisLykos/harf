@@ -135,9 +135,9 @@ class Env(Dict[JsonPrims, List[Path]]):
 
     def __add__(self, other):
         res = defaultdict(list)
-        for p, ps in self:
+        for p, ps in self.items():
             res[p] += ps
-        for p, ps in other:
+        for p, ps in other.items():
             res[p] += ps
         return Env(res)
 
