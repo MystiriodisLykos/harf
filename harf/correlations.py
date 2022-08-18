@@ -166,7 +166,7 @@ def post_data_env(pd: PostDataTextF) -> Env:
 
 
 def header_env(h: HeaderF) -> Env:
-    return Env({h.value: RequestPath(HeaderPath(h.name, EndPath()))})
+    return Env({h.value: [RequestPath(HeaderPath(h.name, EndPath()))]})
 
 
 def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
@@ -192,7 +192,7 @@ def content_env(c: ContentF) -> Env:
             content_env = Env()
         return content_env.map_paths(lambda p: ResponsePath(p))
     except:
-        print(content)
+        return Env()
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
