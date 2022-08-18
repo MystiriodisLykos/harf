@@ -5,7 +5,7 @@ from pprint import pprint
 import click
 from serde.json import from_json
 
-from harf.harf import Har
+from harf.core import Har
 from harf.correlations import mk_env
 
 

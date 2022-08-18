@@ -23,7 +23,7 @@ import json
 
 from serde.json import from_json
 
-from harf.harf import (
+from harf.core import (
     cata,
     harf,
     Har,
