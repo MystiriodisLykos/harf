@@ -9,6 +9,7 @@ from harf.core import Har, harf
 from harf.correlations import (
     post_data_env,
     header_env,
+    cookie_env,
     content_env,
     response_env,
     request_env,
@@ -23,13 +24,15 @@ from harf.correlations import (
 @click.option("--interactive", "-i", is_flag=True, default=False)
 @click.option("--diffable", "-d", is_flag=True, default=False)
 @click.option("--headers", "-h", is_flag=True, default=False)
-def correlations(har_file, interactive, diffable, headers):
+@click.option("--cookies", "-c", is_flag=True, default=False)
+def correlations(har_file, interactive, diffable, headers, cookies):
     # todo: add filters for number of references
     # todo: add verbose to show url instead of entry_{i}
     har = from_json(Har, har_file.read())
     env = harf(
         post_data=post_data_env,
         header=header_env if headers else lambda *a, **k: Env(),
+        cookie=cookie_env if cookies else lambda *a, **k: Env(),
         content=content_env,
         response=response_env,
         request=request_env,

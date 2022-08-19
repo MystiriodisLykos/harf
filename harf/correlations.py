@@ -31,6 +31,7 @@ from harf.core import (
     PostDataTextF,
     QueryStringF,
     HeaderF,
+    CookieF,
     ContentF,
     RequestF,
     ResponseF,
@@ -89,6 +90,9 @@ class HeaderPath(StrPath[DataPath]):
     def __str__(self):
         return f".header{super().__str__()}"
 
+class CookiePath(StrPath[DataPath]):
+    def __str__(self):
+        return f".cookie{super().__str__()}"
 
 @dataclass
 class BodyPath:
@@ -166,8 +170,15 @@ def post_data_env(pd: PostDataTextF) -> Env:
 
 
 def header_env(h: HeaderF) -> Env:
+    if h.name in {"Cookie", "Set-Cookie"}:
+        # ignore cookie related headers, they will be caught in the cookies env
+        return Env()
     return Env({h.value: [RequestPath(HeaderPath(h.name, EndPath()))]})
 
+# todo: header and cookie should not add the request path so they can be reused in response_env
+
+def cookie_env(c: CookieF) -> Env:
+    return Env({c.value: [RequestPath(CookiePath(c.name, EndPath()))]})
 
 def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
     url_path = urlparse(r.url).path.strip("/").split("/")
@@ -180,7 +191,7 @@ def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
             request_env[p] = path + request_env[p]
         else:
             request_env[p] = path
-    return sum(r.headers, request_env)
+    return sum(r.cookies, sum(r.headers, request_env))
 
 
 def content_env(c: ContentF) -> Env:
