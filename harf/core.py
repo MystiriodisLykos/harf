@@ -47,7 +47,7 @@ class BeforeAfterRequestF:
     eTag: str
     hitCount: int
     expires: ostr = None
-    commint: ostr = ""
+    comment: ostr = ""
 
     def nmap(self: "BeforeAfterRequestF") -> "BeforeAfterRequestF":
         return self
