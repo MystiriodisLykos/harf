@@ -2,7 +2,7 @@ from enum import Enum
 from typing import get_args
 from string import printable
 
-from hypothesis import strategies as st
+from hypothesis import assume, given, infer, strategies as st
 
 from harf.core import TimingsF, BeforeAfterRequestF, CacheF, ContentF, Cache
 
@@ -19,7 +19,6 @@ class MimeTypes(Enum):
 
 @st.composite
 def timings(draw):
-    print("timings")
     ssl = draw(optional_int)
     connect = draw(st.integers(ssl) if ssl is not None else optional_int)
     return TimingsF(
@@ -34,7 +33,16 @@ def timings(draw):
     )
 
 
-st.register_type_strategy(TimingsF, timings)
+st.register_type_strategy(TimingsF, timings())
+
+
+@given(timing=infer)
+def timings_ssl_in_connect(timing: TimingsF):
+    assume(timing.ssl is not None)
+    assert timing.connect >= timing.ssl
+
+
+# timings_ssl_in_connect()
 
 before_after_request = st.builds(
     BeforeAfterRequestF,
@@ -49,7 +57,6 @@ st.register_type_strategy(BeforeAfterRequestF, before_after_request)
 
 
 def cache(t):
-    print("cache")
     try:
         before, after = get_args(t)
         print(before, after)
@@ -65,10 +72,9 @@ def cache(t):
 
 st.register_type_strategy(CacheF, cache)
 
-"""
+
 @st.composite
 def content(draw):
-    print("content")
     mimeType = draw(st.sampled_from(MimeTypes))
     if mimeType == MimeTypes.TEXT_PLAIN:
         text_ = draw(text)
@@ -79,8 +85,5 @@ def content(draw):
         comment=draw(comment),
     )
 
-st.register_type_strategy(ContentF, content)
-"""
-print("lkandlfk")
-print(cache(Cache).example())
-print(st.builds(Cache).example())
+
+st.register_type_strategy(ContentF, content())
