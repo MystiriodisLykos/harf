@@ -13,6 +13,7 @@ from harf.core import (
     CookieF,
     ResponseF,
     Response,
+    ParamF
 )
 
 text = st.text(printable)
@@ -31,6 +32,13 @@ class MimeTypes(Enum):
     TEXT_PLAIN = 0
     JSON = 1
 
+@st.composite
+def mime_data(draw):
+    mime_type = draw(st.sampled_from(MimeTypes))
+    if mime_type == MimeTypes.TEXT_PLAIN:
+        return mime_type, draw(text)
+    elif mime_type == MimeTypes.JSON:
+        return mime_type, str(draw(json))
 
 @st.composite
 def timings(draw):
@@ -81,11 +89,7 @@ st.register_type_strategy(CacheF, cache)
 
 @st.composite
 def content(draw):
-    mimeType = draw(st.sampled_from(MimeTypes))
-    if mimeType == MimeTypes.TEXT_PLAIN:
-        text_ = draw(text)
-    elif mimeType == MimeTypes.JSON:
-        text_ = str(draw(json))
+    mimeType, text_ = draw(mime_data())
     return ContentF(
         size=len(text_),
         mimeType=mimeType,
@@ -144,6 +148,24 @@ def response(t):
 
 st.register_type_strategy(ResponseF, response)
 
+@st.composite
+def param(draw):
+    include_file = draw(st.booleans())
+    contentType = None
+    fileName = st.none()
+    value = draw(comment)
+    if include_file:
+        contentType, value  = draw(mime_data())
+        fileName = text
+    return ParamF(
+        name=draw(text),
+        value=value,
+        fileNmae=draw(fileName),
+        contentType=contentType,
+        comment=draw(comment),
+    )
+
+st.register_type_strategy(ParamF, param())
 
 @given(timing=infer)
 def test_timings_ssl_in_connect(timing: TimingsF):
@@ -151,8 +173,25 @@ def test_timings_ssl_in_connect(timing: TimingsF):
     assume(timing.ssl is not None)
     assert timing.connect >= timing.ssl
 
+@given(cache=infer)
+def test_cache_uses_provided_types(cache: CacheF[int, str]):
+    """Tests CacheF instances are built with provided type params"""
+    assert isinstance(cache.before, int)
+    assert isinstance(cache.after, str)
 
 @given(response=infer)
-def test_response_uses_registered_content_strategy(response: Response):
-    """Tests that generating a Response instance uses the registered strategy for the internal Content"""
-    assert response.conent.size >= 0
+def test_response_uses_provided_header_type(response: ResponseF[None, int, None]):
+    assume(len(response.headers))
+    for h in response.headers:
+        assert isinstance(h, int)
+
+@given(response=infer)
+def test_response_uses_provided_cookie_type(response: ResponseF[int, None, None]):
+    assume(len(response.cookies))
+    for c in response.cookies:
+        assert isinstance(c, int)
+
+@given(response=infer)
+def test_response_uses_provided_content_type(response: ResponseF[int, int, ContentF]):
+    assert isinstance(response.content, ContentF)
+    assert response.content.size >= 0
