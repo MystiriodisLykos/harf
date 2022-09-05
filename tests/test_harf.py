@@ -3,44 +3,37 @@ from inspect import signature
 from string import printable
 from typing import get_args, TypeVar, List
 
-from hypothesis import given, infer, strategies as st
+from hypothesis import assume, given, infer, note, strategies as st
 
-from harf.harf import harf, Har, ResponseF, Response, CookieF
+from harf.core import harf, Har, ResponseF, Response, CookieF
+from harf.correlations import mk_env, json_env
 
 text = st.text(printable)
 
-json = st.recursive( st.none() | st.booleans() | st.floats() | text | st.integers(), 
-    lambda children: st.lists(children) | st.dictionaries(text, children))
+json_prims = st.none() | st.booleans() | st.floats() | text | st.integers()
 
-def from_generic_type(t):
-    args = get_args(t)
-    print(t)
-    print(args)
-    print(dir(t))
-    builders = [st.builds(a) for a in args]
-    t = getattr(t, "__origin__", t)
-    params = t.__parameters__
-    var_arg = dict(zip(params, args))
-    builder_args = {}
-    for f in fields(t):
-        if f.type in var_arg:
-            builder_args[f.name] = st.builds(var_arg[f.type])
-        elif hasattr(f.type, "__origin__"):
-            inner_args = [var_arg.get(v, v) for v in get_args(f.type) if isinstance(v, TypeVar)]
-            if inner_args:
-                builder_args[f.name] = from_generic_type(f.type.__getitem__(*inner_args))
-        else:
-            builder_args[f.name] = st.builds(f.type)
-    print(builder_args)
-    return st.builds(t, **builder_args) 
 
-#st.register_type_strategy(ResponseF, from_generic_type)
+@st.composite
+def json(draw, prims=json_prims, keys=text, min_size=0, max_size=None):
+    return draw(
+        st.recursive(
+            prims,
+            lambda children: st.lists(children, min_size=min_size, max_size=max_size)
+            | st.dictionaries(keys, children, min_size=min_size, max_size=max_size),
+        )
+    )
 
-#@given(default=json, har=infer)
+
+@given(json=json_prims.flatmap(lambda e: json(prims=st.just(e), min_size=1)))
+def test_jsonn_with_single_prim_makes_env_with_single_entry(json):
+    env = json_env(json)
+    note(env)
+    assert len(env) == 1
+
+
+test_jsonn_with_single_prim_makes_env_with_single_entry()
+
+# @given(default=json, har=infer)
 def test_harf_default_is_default(default: int, har: Response):
     assert default == harf(default=default)(har)
     pass
-
-#test_harf_default_is_default()
-# print(st.builds(List[int]).example())
-print(from_generic_type(Response).example())
