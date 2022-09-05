@@ -28,13 +28,13 @@ json = st.recursive(
 )
 
 
-class MimeTypes(Enum):
-    TEXT_PLAIN = 0
-    JSON = 1
+class MimeTypes(str, Enum):
+    TEXT_PLAIN = "text"
+    JSON = "application/json"
 
 @st.composite
 def mime_data(draw):
-    mime_type = draw(st.sampled_from(MimeTypes))
+    mime_type = draw(st.sampled_from(MimeTypes)).value
     if mime_type == MimeTypes.TEXT_PLAIN:
         return mime_type, draw(text)
     elif mime_type == MimeTypes.JSON:
@@ -88,7 +88,7 @@ st.register_type_strategy(CacheF, cache)
 
 
 @st.composite
-def content(draw):
+def content(draw):  # todo: change this to take a strategy for building mime data
     mimeType, text_ = draw(mime_data())
     return ContentF(
         size=len(text_),
@@ -149,7 +149,7 @@ def response(t):
 st.register_type_strategy(ResponseF, response)
 
 @st.composite
-def param(draw):
+def param(draw):  # todo: change this to take a strategy for building mime data
     include_file = draw(st.booleans())
     contentType = None
     fileName = st.none()
@@ -160,12 +160,41 @@ def param(draw):
     return ParamF(
         name=draw(text),
         value=value,
-        fileNmae=draw(fileName),
+        fileName=draw(fileName),
         contentType=contentType,
         comment=draw(comment),
     )
 
 st.register_type_strategy(ParamF, param())
+
+def post_data_param(t):
+    try:
+        param = get_args(t)
+    except ValueError as e:
+        raise ValueError(f"Cannot create generic type {t}") from e
+    raise st.builds(
+        PostDataParamF,
+        mimeType=st.sampled_from(MimeTypes),
+        params=st.lists(st.from_type(param)),
+        comment=comment,
+    )
+
+@st.composite
+def post_data_text(draw):
+    mimeType, text = draw(mime_data())
+    return PostDataTextF(
+        mimeType=mimeType,
+        text=text,
+        comment=draw(comment),
+    )
+
+queryString = st.builds(
+    QueryStringF,
+    name=text,
+    value=text,
+    comment=comment
+)
+
 
 @given(timing=infer)
 def test_timings_ssl_in_connect(timing: TimingsF):
