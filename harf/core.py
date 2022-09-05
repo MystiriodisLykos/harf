@@ -371,7 +371,11 @@ def cata(a: Callable[[HarF[A]], A], h: FHar) -> A:
         return cata(a, e)
 
     fs = [inner_cata] * len(getattr(h, "__parameters__", []))
-    return a(h.nmap(*fs))
+    if hasattr(h, "nmap"):
+        subs = h.nmap(*fs)
+    else:
+        subs = h
+    return a(subs)
 
 
 def harf(
