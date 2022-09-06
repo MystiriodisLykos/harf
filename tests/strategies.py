@@ -13,7 +13,17 @@ from harf.core import (
     CookieF,
     ResponseF,
     Response,
-    ParamF
+    ParamF,
+    PostDataParamF,
+    PostDataTextF,
+    QueryStringF,
+    RequestF,
+    EntryF,
+    PageTimingsF,
+    PageF,
+    BrowserF,
+    CreatorF,
+    LogF
 )
 
 text = st.text(printable)
@@ -22,10 +32,18 @@ positive_int = st.integers(0)
 optional_int = positive_int | st.just(-1) | st.none()
 datetime = st.datetimes().map(lambda d: d.strftime("%Y-%m-%dT%H:%M:%S"))
 
-json = st.recursive(
-    st.none() | st.booleans() | st.floats() | text | st.integers(),
-    lambda children: st.lists(children) | st.dictionaries(text, children),
-)
+json_prims = st.none() | st.booleans() | st.floats() | text | st.integers()
+
+
+@st.composite
+def json(draw, prims=json_prims, keys=text, min_size=0, max_size=None):
+    return draw(
+        st.recursive(
+            st.one_of(prims),
+            lambda children: st.lists(children, min_size=min_size, max_size=max_size)
+            | st.dictionaries(keys, children, min_size=min_size, max_size=max_size),
+        )
+    )
 
 
 class MimeTypes(str, Enum):
@@ -172,12 +190,14 @@ def post_data_param(t):
         param = get_args(t)
     except ValueError as e:
         raise ValueError(f"Cannot create generic type {t}") from e
-    raise st.builds(
+    return st.builds(
         PostDataParamF,
         mimeType=st.sampled_from(MimeTypes),
         params=st.lists(st.from_type(param)),
         comment=comment,
     )
+
+st.register_type_strategy(PostDataParamF, post_data_param)
 
 @st.composite
 def post_data_text(draw):
@@ -188,13 +208,58 @@ def post_data_text(draw):
         comment=draw(comment),
     )
 
-queryString = st.builds(
+st.register_type_strategy(PostDataTextF, post_data_text)
+
+query_string = st.builds(
     QueryStringF,
     name=text,
     value=text,
     comment=comment
 )
 
+st.register_type_strategy(QueryStringF, query_string)
+
+
+def request(t):
+    try:
+        cookie, header, query_string, post_data = get_args(t)
+    except ValueError as e:
+        raise ValueError(f"Cannot create generic type {t}") from e
+    return st.builds(
+        RequestF,
+        method=text,
+        url=text,
+        httpVersion=st.just("1.1"),
+        cookies=st.lists(st.from_type(cookie)),
+        headers=st.lists(st.from_type(headers)),
+        queryString=st.lists(st.from_type(query_string)),
+        headersSize=optional_int,
+        bodySize=optional_int,
+        postData=st.from_type(post_data) | st.none(),
+        comment=comment
+    )
+
+st.register_type_strategy(RequestF, request)
+
+def entry(t):
+    try:
+        request, response, cache, timings = get_args(t)
+    except ValueError as e:
+        raise ValueError(f"Cannot create generic type {f}") from e
+    return st.builds(
+        EntryF,
+        startedDateTime=datetime,
+        time=optional_int,
+        request=st.from_type(request),
+        response=st.from_type(response),
+        cache=st.from_type(cache),
+        timings=st.from_type(timings),
+        serverIPAddress=comment,
+        connection=comment,
+        comment=comment
+    )
+
+st.register_type_strategy(EntryF, entry)
 
 @given(timing=infer)
 def test_timings_ssl_in_connect(timing: TimingsF):
