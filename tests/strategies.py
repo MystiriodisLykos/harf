@@ -23,7 +23,7 @@ from harf.core import (
     PageF,
     BrowserF,
     CreatorF,
-    LogF
+    LogF,
 )
 
 text = st.text(printable)
@@ -39,7 +39,7 @@ json_prims = st.none() | st.booleans() | st.floats() | text | st.integers()
 def json(draw, prims=json_prims, keys=text, min_size=0, max_size=None):
     return draw(
         st.recursive(
-            st.one_of(prims),
+            prims,
             lambda children: st.lists(children, min_size=min_size, max_size=max_size)
             | st.dictionaries(keys, children, min_size=min_size, max_size=max_size),
         )
@@ -50,6 +50,7 @@ class MimeTypes(str, Enum):
     TEXT_PLAIN = "text"
     JSON = "application/json"
 
+
 @st.composite
 def mime_data(draw):
     mime_type = draw(st.sampled_from(MimeTypes)).value
@@ -57,6 +58,7 @@ def mime_data(draw):
         return mime_type, draw(text)
     elif mime_type == MimeTypes.JSON:
         return mime_type, str(draw(json))
+
 
 @st.composite
 def timings(draw):
@@ -166,6 +168,7 @@ def response(t):
 
 st.register_type_strategy(ResponseF, response)
 
+
 @st.composite
 def param(draw):  # todo: change this to take a strategy for building mime data
     include_file = draw(st.booleans())
@@ -173,7 +176,7 @@ def param(draw):  # todo: change this to take a strategy for building mime data
     fileName = st.none()
     value = draw(comment)
     if include_file:
-        contentType, value  = draw(mime_data())
+        contentType, value = draw(mime_data())
         fileName = text
     return ParamF(
         name=draw(text),
@@ -183,7 +186,9 @@ def param(draw):  # todo: change this to take a strategy for building mime data
         comment=draw(comment),
     )
 
+
 st.register_type_strategy(ParamF, param())
+
 
 def post_data_param(t):
     try:
@@ -197,7 +202,9 @@ def post_data_param(t):
         comment=comment,
     )
 
+
 st.register_type_strategy(PostDataParamF, post_data_param)
+
 
 @st.composite
 def post_data_text(draw):
@@ -208,14 +215,10 @@ def post_data_text(draw):
         comment=draw(comment),
     )
 
+
 st.register_type_strategy(PostDataTextF, post_data_text)
 
-query_string = st.builds(
-    QueryStringF,
-    name=text,
-    value=text,
-    comment=comment
-)
+query_string = st.builds(QueryStringF, name=text, value=text, comment=comment)
 
 st.register_type_strategy(QueryStringF, query_string)
 
@@ -236,10 +239,12 @@ def request(t):
         headersSize=optional_int,
         bodySize=optional_int,
         postData=st.from_type(post_data) | st.none(),
-        comment=comment
+        comment=comment,
     )
 
+
 st.register_type_strategy(RequestF, request)
+
 
 def entry(t):
     try:
@@ -256,10 +261,12 @@ def entry(t):
         timings=st.from_type(timings),
         serverIPAddress=comment,
         connection=comment,
-        comment=comment
+        comment=comment,
     )
 
+
 st.register_type_strategy(EntryF, entry)
+
 
 @given(timing=infer)
 def test_timings_ssl_in_connect(timing: TimingsF):
@@ -267,11 +274,13 @@ def test_timings_ssl_in_connect(timing: TimingsF):
     assume(timing.ssl is not None)
     assert timing.connect >= timing.ssl
 
+
 @given(cache=infer)
 def test_cache_uses_provided_types(cache: CacheF[int, str]):
     """Tests CacheF instances are built with provided type params"""
     assert isinstance(cache.before, int)
     assert isinstance(cache.after, str)
+
 
 @given(response=infer)
 def test_response_uses_provided_header_type(response: ResponseF[None, int, None]):
@@ -279,11 +288,13 @@ def test_response_uses_provided_header_type(response: ResponseF[None, int, None]
     for h in response.headers:
         assert isinstance(h, int)
 
+
 @given(response=infer)
 def test_response_uses_provided_cookie_type(response: ResponseF[int, None, None]):
     assume(len(response.cookies))
     for c in response.cookies:
         assert isinstance(c, int)
+
 
 @given(response=infer)
 def test_response_uses_provided_content_type(response: ResponseF[int, int, ContentF]):

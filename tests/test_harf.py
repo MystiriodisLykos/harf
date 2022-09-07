@@ -10,6 +10,7 @@ from harf.correlations import mk_env, json_env
 
 from strategies import json_prims, json
 
+
 @given(json=json_prims.flatmap(lambda e: json(prims=st.just(e), min_size=1)))
 @example(None)
 def test_jsonn_with_single_prim_makes_env_with_single_entry(json):
@@ -20,14 +21,41 @@ def test_jsonn_with_single_prim_makes_env_with_single_entry(json):
 
 # test_jsonn_with_single_prim_makes_env_with_single_entry()
 
-"""
-@given(alphabet=st.shared(st.sets(json_prims), key="alphabet"),json=json(prims=st.shared(st.sets(json_prims), key="alphabet").flat_map(lambda e: st.sampled_from(list(e)))))
+
+@given(
+    alphabet=st.shared(st.sets(json_prims, min_size=1), key="alphabet"),
+    json=json(
+        prims=st.shared(st.sets(json_prims), key="alphabet")
+        .map(list)
+        .flatmap(st.sampled_from)
+    ),
+)
 def test_json_with_alphabet_A_makes_env_with_A_or_less(alphabet, json):
-    note(alphabet)
-    note(json)
-    assert len(alphabet) < 3
-"""
+    """Creating an env from a json with leaves from alphabet A has at most |A| elements.
+
+    len(A) >= len(env(json(a)))
+    """
+    env = json_env(json)
+    note(env)
+    assert len(env) <= len(alphabet)
+
+
 # test_json_with_alphabet_A_makes_env_with_A_or_less()
 
-print(json(st.sets(st.integers())).example())
 
+@given(
+    alphabet=st.shared(st.sets(json_prims, min_size=1), key="alphabet"),
+    json=json(
+        prims=st.shared(st.sets(json_prims), key="alphabet")
+        .map(list)
+        .flatmap(st.sampled_from)
+    ),
+)
+@example({False}, False)
+def test_json_with_alphabet_A_makes_env_with_values_in_A(alphabet, json):
+    env = json_env(json)
+    note(env)
+    assert set(env).issubset(alphabet)
+
+
+test_json_with_alphabet_A_makes_env_with_values_in_A()
