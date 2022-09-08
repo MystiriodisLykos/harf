@@ -47,6 +47,7 @@ B = TypeVar("B")
 
 class Path(Protocol):
     next_: "Path"
+    def __len__(self) -> int: ...
 
 
 @dataclass
@@ -56,6 +57,8 @@ class IntPath(Generic[A]):
 
     def __str__(self):
         return f"[{self.index}]{self.next_}"
+    def __len__(self):
+        return 1 + len(self.next_)
 
 
 @dataclass
@@ -66,12 +69,16 @@ class StrPath(Generic[A]):
     def __str__(self):
         return f".{self.key}{self.next_}"
 
+    def __len__(self):
+        return 1 + len(self.next_)
 
 @dataclass
 class EndPath:
     def __str__(self):
         return ""
 
+    def __len__(self):
+        return 1
 
 DataPath = Union[IntPath[A], StrPath[A], EndPath]["DataPath"]  # type: ignore[index]
 
@@ -101,6 +108,8 @@ class BodyPath:
     def __str__(self):
         return f".body{self.next_}"
 
+    def __len__(self):
+        return 1 + len(self.next_)
 
 @dataclass
 class RequestPath:
@@ -109,6 +118,8 @@ class RequestPath:
     def __str__(self):
         return f".request{self.next_}"
 
+    def __len__(self):
+        return 1 + len(self.next_)
 
 @dataclass
 class ResponsePath:
@@ -117,6 +128,8 @@ class ResponsePath:
     def __str__(self):
         return f".response{self.next_}"
 
+    def __len__(self):
+        return 1 + len(self.next_)
 
 @dataclass
 class EntryPath:
@@ -126,6 +139,8 @@ class EntryPath:
     def __str__(self):
         return f"entry_{self.index}{self.next_}"
 
+    def __len__(self):
+        return 1 + len(self.next_)
 
 Env = Dict[JsonPrims, List[Path]]
 
