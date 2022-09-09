@@ -23,7 +23,8 @@ def _json_depth_a(json) -> int:
 
 json_depth = partial(jsonf_cata, _json_depth_a)
 
-max_path_length = lambda env: max(map(len, chain(*env.values())), default=0)
+paths = lambda env: chain(*env.values())
+max_path_length = lambda env: max(map(len, paths(env)), default=0)
 
 
 @given(json=json_prims.flatmap(lambda e: json(prims=st.just(e), min_size=1)))
@@ -113,4 +114,58 @@ def test_building_nested_json_from_json_increases_max_path_by_one(json):
     assert max_path_length(env) + 1 == max_path_length(json_env({"A": json, "B": json}))
 
 
-test_building_nested_json_from_json_increases_max_path_by_one()
+# test_building_nested_json_from_json_increases_max_path_by_one()
+
+
+@given(json=json(min_size=1))
+def test_building_nested_json_from_json_doubles_number_of_paths(json):
+    env = json_env(json)
+    note(env)
+    assert len(list(paths(env))) * 2 == len(list(paths(json_env([json, json]))))
+    assert len(list(paths(env))) * 2 == len(
+        list(paths(json_env({"A": json, "B": json})))
+    )
+
+
+# test_building_nested_json_from_json_doubles_number_of_paths()
+
+
+@given(
+    alphabet=st.shared(st.sets(json_prims, min_size=1), key="alphabet"),
+    json=json(
+        prims=st.shared(st.sets(json_prims), key="alphabet")
+        .map(list)
+        .flatmap(st.sampled_from)
+    ),
+    extra=json_prims,
+)
+def test_adding_an_extra_value_to_json_increases_values_and_paths_by_one(
+    alphabet, json, extra
+):
+    assume(extra not in alphabet)
+    env = json_env(json)
+    note(env)
+    envl = json_env([json, extra])
+    envd = json_env({"J": json, "E": extra})
+    note(envl)
+    note(envd)
+    assert len(env) + 1 == len(envl) == len(envd)
+    assert len(paths(env)) + 1 == len(paths(envl)) == len(paths(envd))
+
+
+# test_adding_an_extra_value_to_json_increases_values_and_paths_by_one()
+
+
+@given(json=json())
+def test_nesting_json_once_does_not_change_values_or_path_count(json):
+    env = json_env(json)
+    note(env)
+    envl = json_env([json])
+    envd = json_env({"id": json})
+    note(envl)
+    note(envd)
+    assert list(env) == list(envl) == list(envd)
+    assert len(list(paths(env))) == len(list(paths(envl))) == len(list(paths(envd)))
+
+# test_nesting_json_once_does_not_change_values_or_path_count()
+
