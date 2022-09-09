@@ -8,10 +8,10 @@ from typing import get_args, TypeVar, List
 from hypothesis import assume, example, given, infer, note, strategies as st
 
 from harf.core import harf, Har, ResponseF, Response, CookieF
-from harf.correlations import mk_env, json_env
+from harf.correlations import mk_env, json_env, EndPath
 from harf.jsonf import jsonf_cata
 
-from strategies import json_prims, json
+from strategies import json_prims, json, text
 
 
 def _json_depth_a(json) -> int:
@@ -169,3 +169,36 @@ def test_nesting_json_once_does_not_change_values_or_path_count(json):
 
 # test_nesting_json_once_does_not_change_values_or_path_count()
 
+@given(json=json(prims=(st.lists(json_prims, min_size=1) | st.dictionaries(text, json_prims, min_size=1)), min_size=1))
+@example({"": [None, None]})
+@example([None])
+def test_the_number_of_paths_is_the_sum_of_all_sub_envs(json):
+    env = json_env(json)
+    note(env)
+    path_count = len(list(paths(env)))
+    note(path_count)
+    values = json if isinstance(json, list) else json.values()
+    assert path_count == sum(len(list(paths(json_env(s)))) for s in values)
+
+
+# test_the_number_of_paths_is_the_sum_of_all_sub_envs()
+
+@given(json=json(prims=(st.lists(json_prims, min_size=1) | st.dictionaries(text, json_prims, min_size=1)), min_size=1))
+def test_the_set_of_values_is_the_inclusion_of_all_sub_values(json):
+    env = json_env(json)
+    note(env)
+    values = json if isinstance(json, list) else json.values()
+    assert set(env.keys()) == set(chain(*[json_env(s).keys() for s in values]))
+
+# test_the_set_of_values_is_the_inclusion_of_all_sub_values()
+
+@given(json=json_prims)
+def test_primitive_values_produce_primative_env(json):
+    env = json_env(json)
+    note(env)
+    assert len(env) == 1
+    env_paths = list(paths(env))
+    assert len(env_paths) == 1
+    assert env_paths == [EndPath()]
+
+# test_primitive_values_produce_primative_env()
