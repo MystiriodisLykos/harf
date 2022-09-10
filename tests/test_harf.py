@@ -150,7 +150,7 @@ def test_adding_an_extra_value_to_json_increases_values_and_paths_by_one(
     note(envl)
     note(envd)
     assert len(env) + 1 == len(envl) == len(envd)
-    assert len(paths(env)) + 1 == len(paths(envl)) == len(paths(envd))
+    assert len(list(paths(env))) + 1 == len(list(paths(envl))) == len(list(paths(envd)))
 
 
 # test_adding_an_extra_value_to_json_increases_values_and_paths_by_one()
