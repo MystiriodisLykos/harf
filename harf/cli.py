@@ -42,7 +42,7 @@ def correlations(har_file, interactive, diffable, headers, cookies, verbose):
         default=Env(),
     )(har)
     if interactive:
-        code.interact(local={"env": env})
+        code.interact(local={"env": env, "har": har})
     else:
         to_ref = str
         if verbose:
