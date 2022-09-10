@@ -1,4 +1,4 @@
-{ lib, buildPythonPackage, pyserde, click }:
+{ lib, buildPythonPackage, pyserde, click, hypothesis, pytestCheckHook }:
 
 buildPythonPackage rec {
     pname = "harf";
@@ -7,4 +7,8 @@ buildPythonPackage rec {
     src = ./.;
 
     propagatedBuildInputs = [ pyserde click ];
+
+    checkInputs = [ pytestCheckHook hypothesis ];
+
+    pytestFlagsArray = [ "--hypothesis-show-statistics" ];
 }
