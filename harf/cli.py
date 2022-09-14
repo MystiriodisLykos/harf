@@ -21,11 +21,11 @@ from harf.correlations import (
 
 @click.command()
 @click.argument("har-file", type=click.File("r"))
-@click.option("--interactive", "-i", is_flag=True, default=False)
-@click.option("--diffable", "-d", is_flag=True, default=False)
-@click.option("--headers", "-h", is_flag=True, default=False)
-@click.option("--cookies", "-c", is_flag=True, default=False)
-@click.option("--verbose", "-v", is_flag=True, default=False)
+@click.option("--interactive", "-i", is_flag=True, default=False, help="Starts an interactive python shell with the har file and env loaded.")
+@click.option("--diffable", "-d", is_flag=True, default=False, help="Replaces values in reference strings to help with diffing between har files.")
+@click.option("--headers", "-h", is_flag=True, default=False, help="Inspect headers for correlation values.")
+@click.option("--cookies", "-c", is_flag=True, default=False, help="Inspect cookies for correlation values.")
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Make the output slightly more verbose by using the full url when available instead of entry number.")
 def correlations(har_file, interactive, diffable, headers, cookies, verbose):
     # todo: add filters for number of references
     # todo: add verbose to show url instead of entry_{i}
@@ -52,6 +52,7 @@ def correlations(har_file, interactive, diffable, headers, cookies, verbose):
             message = f"Value ({repr(p)}) used in:"
             if diffable:
                 message = f"Value first seen at {refs[0]} used again in:"
+                # todo remove all value references
                 refs = refs[1:]
             print(message)
             print(dumps(refs, indent=4).strip("[]\n"))
