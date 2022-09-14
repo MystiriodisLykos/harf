@@ -181,32 +181,31 @@ json_env = partial(jsonf_cata, _json_env)
 
 
 def post_data_env(pd: PostDataTextF) -> Env:
-    return json_env(json.loads(pd.text)).map_paths(lambda p: RequestPath(BodyPath(p)))
+    return json_env(json.loads(pd.text)).map_paths(BodyPath)
 
 
 def header_env(h: HeaderF) -> Env:
     if h.name in {"Cookie", "Set-Cookie"}:
-        # ignore cookie related headers, they will be caught in the cookies env
+        # Cookie related headers should be ignored infavor of dealing with the cookies directly.
         return Env()
-    return Env({h.value: [RequestPath(HeaderPath(h.name, EndPath()))]})
+    return Env({h.value: [HeaderPath(h.name, EndPath())]})
 
-# todo: header and cookie should not add the request path so they can be reused in response_env
 
 def cookie_env(c: CookieF) -> Env:
-    return Env({c.value: [RequestPath(CookiePath(c.name, EndPath()))]})
+    return Env({c.value: [CookiePath(c.name, EndPath())]})
 
 def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
     url_path = urlparse(r.url).path.strip("/").split("/")
     request_env = r.postData or Env()
     for i, p in enumerate(url_path):
-        path = [RequestPath(UrlPath(i, EndPath()))]
+        path = [UrlPath(i, EndPath())]
         if p.isdigit():
             p = int(p)
         if p in request_env:
             request_env[p] = path + request_env[p]
         else:
             request_env[p] = path
-    return sum(r.cookies, sum(r.headers, request_env))
+    return sum(r.cookies, sum(r.headers, request_env)).map_paths(RequestPath)
 
 
 def content_env(c: ContentF) -> Env:
@@ -216,13 +215,13 @@ def content_env(c: ContentF) -> Env:
             content_env = json_env(json.loads(content))
         else:
             content_env = Env()
-        return content_env.map_paths(lambda p: ResponsePath(p))
+        return content_env.map_paths(BodyPath)
     except:
         return Env()
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
-    return r.content
+    return sum(r.cookies, sum(r.headers, r.content)).map_paths(ResponsePath)
 
 
 def entry_env(e: EntryF[Env, Env, Env, Env]) -> Env:
