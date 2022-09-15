@@ -74,6 +74,7 @@ def str_env(
     is_flag=True,
     default=False,
     help="Inspect headers for correlation values.",
+    show_default=True,
 )
 @click.option(
     "--cookies",
@@ -81,6 +82,7 @@ def str_env(
     is_flag=True,
     default=False,
     help="Inspect cookies for correlation values.",
+    show_default=True,
 )
 @click.option(
     "--verbose",
@@ -89,8 +91,8 @@ def str_env(
     default=False,
     help="Make the output slightly more verbose by using the full url when available instead of entry number.",
 )
-@click.option("--min-reference-percent", "-m", "min_percent", default=2)
-@click.option("--max-reference-percent", "-x", "max_percent", default=98)
+@click.option("--min-reference-percent", "-m", "min_percent", default=2, show_default=True)
+@click.option("--max-reference-percent", "-x", "max_percent", default=98, show_default=True)
 def correlations(
     har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent
 ):
