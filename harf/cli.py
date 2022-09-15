@@ -1,5 +1,8 @@
 import code
+from functools import partial
+from itertools import chain
 from json import dumps
+from typing import Callable
 from pprint import pprint
 
 import click
@@ -16,19 +19,82 @@ from harf.correlations import (
     entry_env,
     log_env,
     Env,
+    Path,
 )
+
+
+def filter_by_percentages(min_percent: float, max_percent: float, env: Env) -> Env:
+    max_reference_count = len(max(env.values(), key=len))
+    min_bound = int(max_reference_count * min_percent)
+    max_bound = int(max_reference_count * max_percent)
+    filtered_env = Env()
+    for v, ps in env.items():
+        if min_bound <= len(ps) <= max_bound:
+            filtered_env[v] = ps
+    return filtered_env
+
+
+def str_env(
+    env: Env, verbose=False, diffable=False, str_ref: Callable[[Path], str] = str
+) -> str:
+    res = ""
+    for p, ps in env.items():
+        refs = list(map(str_ref, ps))
+        message = f"Value ({repr(p)}) used in:"
+        if diffable:
+            if len(refs) == 1:
+                continue
+            message = f"Value first seen at {refs[0]} used again in:"
+            refs = refs[1:]
+        res += f"{message}\n"
+        res += dumps(refs, indent=4).strip("[]").lstrip("\n")
+        res += "\n"
+    return res
 
 
 @click.command()
 @click.argument("har-file", type=click.File("r"))
-@click.option("--interactive", "-i", is_flag=True, default=False, help="Starts an interactive python shell with the har file and env loaded.")
-@click.option("--diffable", "-d", is_flag=True, default=False, help="Replaces values in reference strings to help with diffing between har files.")
-@click.option("--headers", "-h", is_flag=True, default=False, help="Inspect headers for correlation values.")
-@click.option("--cookies", "-c", is_flag=True, default=False, help="Inspect cookies for correlation values.")
-@click.option("--verbose", "-v", is_flag=True, default=False, help="Make the output slightly more verbose by using the full url when available instead of entry number.")
-def correlations(har_file, interactive, diffable, headers, cookies, verbose):
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    default=False,
+    help="Starts an interactive python shell with the har file and env loaded.",
+)
+@click.option(
+    "--diffable",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Replaces values in reference strings to help with diffing between har files.",
+)
+@click.option(
+    "--headers",
+    "-h",
+    is_flag=True,
+    default=False,
+    help="Inspect headers for correlation values.",
+)
+@click.option(
+    "--cookies",
+    "-c",
+    is_flag=True,
+    default=False,
+    help="Inspect cookies for correlation values.",
+)
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    default=False,
+    help="Make the output slightly more verbose by using the full url when available instead of entry number.",
+)
+@click.option("--min-reference-percent", "-m", "min_percent", default=2)
+@click.option("--max-reference-percent", "-x", "max_percent", default=98)
+def correlations(
+    har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent
+):
     # todo: add filters for number of references
-    # todo: add verbose to show url instead of entry_{i}
     har = from_json(Har, har_file.read())
     env = harf(
         post_data=post_data_env,
@@ -42,21 +108,28 @@ def correlations(har_file, interactive, diffable, headers, cookies, verbose):
         default=Env(),
     )(har)
     if interactive:
-        code.interact(local={"env": env, "har": har})
+        code.interact(
+            local={
+                "env": env,
+                "har": har,
+                "filter_env": partial(
+                    filter_by_percentages, min_percent / 100, max_percent / 100
+                ),
+                "str_env": str_env,
+            }
+        )
+        return
+    if min_percent > 0 or max_percent < 100:
+        env = filter_by_percentages(min_percent / 100, max_percent / 100, env)
+    if verbose:
+        to_ref = (
+            lambda p: har.log.entries[p.index].request.url
+            + " "
+            + str(p.next_).lstrip(".")
+        )
     else:
         to_ref = str
-        if verbose:
-            to_ref = lambda p: har.log.entries[p.index].request.url + " " + str(p.next_).lstrip(".")
-        for p, ps in env.items():
-            refs = list(map(to_ref, ps))
-            message = f"Value ({repr(p)}) used in:"
-            if diffable:
-                message = f"Value first seen at {refs[0]} used again in:"
-                # todo remove all value references
-                refs = refs[1:]
-            print(message)
-            print(dumps(refs, indent=4).strip("[]\n"))
-            print()
+    print(str_env(env, verbose, diffable, to_ref))
 
 
 if __name__ == "__main__":
