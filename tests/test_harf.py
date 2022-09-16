@@ -4,14 +4,52 @@ from inspect import signature
 from itertools import chain
 from string import printable
 from typing import get_args, TypeVar, List
+from json import dumps as json_dumps
 
 from hypothesis import assume, example, given, infer, note, strategies as st
 
-from harf.core import harf, Har, ResponseF, Response, CookieF
-from harf.correlations import mk_env, json_env, EndPath
+from harf.core import (
+    harf,
+    ResponseF,
+    CookieF,
+    HeaderF,
+    ContentF,
+    RequestF,
+    EntryF,
+    LogF,
+    HarF,
+    PostDataTextF,
+    QueryStringF,
+)
+from harf.correlations import (
+    mk_env,
+    json_env,
+    EndPath,
+    IntPath,
+    StrPath,
+    EndPath,
+    DataPath,
+    UrlPath,
+    QueryPath,
+    HeaderPath,
+    CookiePath,
+    BodyPath,
+    RequestPath,
+    ResponsePath,
+    EntryPath,
+    Env,
+    header_env,
+    post_data_env,
+    cookie_env,
+    request_env,
+    content_env,
+    response_env,
+    entry_env,
+    log_env,
+)
 from harf.jsonf import jsonf_cata
 
-from strategies import json_prims, json, text
+from strategies import json_prims, json, text, post_data_text
 
 
 def _json_depth_a(json) -> int:
@@ -167,9 +205,19 @@ def test_nesting_json_once_does_not_change_values_or_path_count(json):
     assert list(env) == list(envl) == list(envd)
     assert len(list(paths(env))) == len(list(paths(envl))) == len(list(paths(envd)))
 
+
 # test_nesting_json_once_does_not_change_values_or_path_count()
 
-@given(json=json(prims=(st.lists(json_prims, min_size=1) | st.dictionaries(text, json_prims, min_size=1)), min_size=1))
+
+@given(
+    json=json(
+        prims=(
+            st.lists(json_prims, min_size=1)
+            | st.dictionaries(text, json_prims, min_size=1)
+        ),
+        min_size=1,
+    )
+)
 @example({"": [None, None]})
 @example([None])
 def test_the_number_of_paths_is_the_sum_of_all_sub_envs(json):
@@ -183,14 +231,25 @@ def test_the_number_of_paths_is_the_sum_of_all_sub_envs(json):
 
 # test_the_number_of_paths_is_the_sum_of_all_sub_envs()
 
-@given(json=json(prims=(st.lists(json_prims, min_size=1) | st.dictionaries(text, json_prims, min_size=1)), min_size=1))
+
+@given(
+    json=json(
+        prims=(
+            st.lists(json_prims, min_size=1)
+            | st.dictionaries(text, json_prims, min_size=1)
+        ),
+        min_size=1,
+    )
+)
 def test_the_set_of_values_is_the_inclusion_of_all_sub_values(json):
     env = json_env(json)
     note(env)
     values = json if isinstance(json, list) else json.values()
     assert set(env.keys()) == set(chain(*[json_env(s).keys() for s in values]))
 
+
 # test_the_set_of_values_is_the_inclusion_of_all_sub_values()
+
 
 @given(json=json_prims)
 def test_primitive_values_produce_primative_env(json):
@@ -201,4 +260,45 @@ def test_primitive_values_produce_primative_env(json):
     assert len(env_paths) == 1
     assert env_paths == [EndPath()]
 
+
 # test_primitive_values_produce_primative_env()
+
+
+@given(header=infer)
+def test_header_env_makes_a_single_env(header: HeaderF):
+    env = header_env(header)
+    note(env)
+    assert len(env) == 1
+    assert header.value in env
+    assert len(env[header.value]) == 1
+    assert isinstance(env[header.value][0], HeaderPath)
+
+
+@given(cookie=infer)
+def test_cookie_env_makes_a_single_env(cookie: CookieF):
+    env = cookie_env(cookie)
+    note(env)
+    assert len(env) == 1
+    assert cookie.value in env
+    assert len(env[cookie.value]) == 1
+    assert isinstance(env[cookie.value][0], CookiePath)
+
+
+@given(
+    json=st.shared(json(), key="json"),
+    post_data=post_data_text(
+        mime_data=st.tuples(
+            st.just("application/json"), st.shared(json(), key="json").map(json_dumps)
+        )
+    ),
+)
+def test_post_data_env_is_equivalent_to_json_env(json, post_data):
+    pass
+    jenv = json_env(json)
+    penv = post_data_env(post_data)
+    assert len(jenv) == len(penv)
+    assert set(jenv) == set(penv)
+    for v, rs in penv.items():
+        assert len(jenv[v]) == len(rs)
+        for j, p in zip(jenv[v], rs):
+            assert p.next_ == j

@@ -57,7 +57,7 @@ def mime_data(draw):
     if mime_type == MimeTypes.TEXT_PLAIN:
         return mime_type, draw(text)
     elif mime_type == MimeTypes.JSON:
-        return mime_type, str(draw(json))
+        return mime_type, str(draw(json()))
 
 
 @st.composite
@@ -137,7 +137,7 @@ cookie = st.builds(
     value=text,
     path=comment,
     domain=comment,
-    expires=datetime | st.none(),
+    expired=datetime | st.none(),
     httpOnly=st.booleans(),
     secure=st.booleans(),
     comment=comment,
@@ -207,8 +207,8 @@ st.register_type_strategy(PostDataParamF, post_data_param)
 
 
 @st.composite
-def post_data_text(draw):
-    mimeType, text = draw(mime_data())
+def post_data_text(draw, mime_data=mime_data()):
+    mimeType, text = draw(mime_data)
     return PostDataTextF(
         mimeType=mimeType,
         text=text,

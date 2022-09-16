@@ -96,7 +96,6 @@ def str_env(
 def correlations(
     har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent
 ):
-    # todo: add filters for number of references
     har = from_json(Har, har_file.read())
     env = harf(
         post_data=post_data_env,
