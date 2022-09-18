@@ -6,6 +6,7 @@ from typing import (
     Callable
 )
 from urllib.parse import urlparse
+import base64
 import json
 
 from harf.correlations.paths import (
@@ -105,15 +106,13 @@ def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
 
 
 def content_env(c: ContentF) -> Env:
-    content = c.text
-    try:
-        if content != "":
-            content_env = json_env(json.loads(content))
-        else:
-            content_env = Env()
-        return content_env.map_paths(BodyPath)
-    except:
-        return Env()
+    if "application/json" in c.mimeType:
+        text = c.text
+        if c.encoding == "base64":
+            text = base64.b64decode(text)
+        if text != "":
+            return json_env(json.loads(text)).map_paths(BodyPath)
+    return Env()
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
