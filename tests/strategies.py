@@ -32,7 +32,10 @@ positive_int = st.integers(0)
 optional_int = positive_int | st.just(-1) | st.none()
 datetime = st.datetimes().map(lambda d: d.strftime("%Y-%m-%dT%H:%M:%S"))
 
-json_prims = st.none() | st.booleans() | st.floats() | text | st.integers()
+# nan is a pain to test so its removed
+json_prims = (
+    st.none() | st.booleans() | st.floats(allow_nan=False) | text | st.integers()
+)
 
 
 @st.composite
