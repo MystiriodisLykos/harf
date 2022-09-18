@@ -33,6 +33,7 @@ from harf.correlations import (
     QueryPath,
     HeaderPath,
     CookiePath,
+    QueryPath,
     BodyPath,
     RequestPath,
     ResponsePath,
@@ -41,6 +42,7 @@ from harf.correlations import (
     header_env,
     post_data_env,
     cookie_env,
+    query_string_env,
     request_env,
     content_env,
     response_env,
@@ -282,6 +284,15 @@ def test_cookie_env_makes_a_single_env(cookie: CookieF):
     assert cookie.value in env
     assert len(env[cookie.value]) == 1
     assert isinstance(env[cookie.value][0], CookiePath)
+
+@given(query_string=infer)
+def test_query_string_env_makes_a_single_env(query_string: QueryStringF):
+    env = query_string_env(query_string)
+    note(env)
+    assert len(env) == 1
+    assert query_string.value in env
+    assert len(env[query_string.value]) == 1
+    assert isinstance(env[query_string.value][0], QueryPath)
 
 
 @given(
