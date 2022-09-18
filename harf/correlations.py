@@ -170,11 +170,10 @@ def _json_env(element: JsonF[Env]) -> Env:
         mk_path = IntPath
     else:
         return Env({element: [EndPath()]})
-    res = defaultdict(list)
-    for path, envs in iter_:
-        for prim, paths in envs.items():
-            res[prim] += [mk_path(path, p) for p in paths]
-    return Env(res)
+    res = Env()
+    for path, env in iter_:
+        res += env.map_paths(lambda p: mk_path(path, p))
+    return res
 
 
 json_env = partial(jsonf_cata, _json_env)
