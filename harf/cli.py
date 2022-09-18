@@ -9,7 +9,7 @@ import click
 from serde.json import from_json
 
 from harf.core import Har, harf
-from harf.correlations import (
+from harf.correlations.envs import (
     post_data_env,
     header_env,
     cookie_env,
