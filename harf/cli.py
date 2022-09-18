@@ -102,7 +102,7 @@ def correlations(
         post_data=post_data_env,
         header=header_env if headers else lambda *a, **k: Env(),
         cookie=cookie_env if cookies else lambda *a, **k: Env(),
-        queryString=query_string_env,
+        querystring=query_string_env,
         content=content_env,
         response=response_env,
         request=request_env,
