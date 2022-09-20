@@ -22,6 +22,7 @@ from harf.correlations.envs import (
     Env,
     Path,
 )
+from harf.correlations.obsidian import mk_obsidian
 
 
 def filter_by_percentages(min_percent: float, max_percent: float, env: Env) -> Env:
@@ -94,8 +95,9 @@ def str_env(
 )
 @click.option("--min-reference-percent", "-m", "min_percent", default=2, show_default=True)
 @click.option("--max-reference-percent", "-x", "max_percent", default=98, show_default=True)
+@click.option("--obsidian", "-o", is_flag=True, default=False)
 def correlations(
-    har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent
+    har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent, obsidian
 ):
     har = from_json(Har, har_file.read())
     env = harf(
@@ -132,7 +134,20 @@ def correlations(
         )
     else:
         to_ref = str
-    print(str_env(env, verbose, diffable, to_ref))
+    if obsidian:
+        obsidian_str = mk_obsidian(env, har)
+        for i, e in enumerate(obsidian_str.split("__ENTRY")):
+            response_css = "---\ncssclass: response\n---" 
+            request, response = e.split(response_css)
+            response_name = f"harf/obsidian_template/response_{i}.md"
+            with open(f"harf/obsidian_template/request_{i}.md", "w") as request_file:
+                request_file.write(request)
+                request_file.write(f"\n# Response\n![[{response_name.split('/')[-1]}]]")
+            with open(response_name, "w") as response_file:
+                response_file.write(response_css)
+                response_file.write(response)
+    else:
+        print(str_env(env, verbose, diffable, to_ref))
 
 
 if __name__ == "__main__":

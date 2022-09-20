@@ -13,16 +13,18 @@ from harf.core import (
     ResponseF,
     EntryF,
     LogF,
+    Har,
+    harf
 )
 
 from harf.correlations.envs import Env
 from harf.jsonf import jsonf_cata, JsonF, JsonPrims
 
 def _get_link(env: Env, value: JsonPrims) -> str:
-    alias = repr(value)
     if value in env:
-        return f"[[{str(env[value][0])}|{alias}]]"
-    return alias
+        link = str(env[value][0]).replace("[", "_").replace("]", "")
+        return f"[[{link}|{value}]]"
+    return value
 
 def _json_str(env: Env, element: JsonF[str]) -> str:
     if isinstance(element, dict):
@@ -51,7 +53,7 @@ def request(env: Env, r: RequestF[str, str, str, str]) -> str:
     url = urlparse(r.url).path.strip("/").split("/")
     f_url = "/"
     for p in url:
-        f_url += _get_link(env, p) + "/"
+        f_url += _get_link(env, p).strip("'\"") + "/"
     query_string = ""
     if len(r.queryString) != 0:
         query_string = "- " + "\n- ".join(r.queryString)
@@ -59,8 +61,8 @@ def request(env: Env, r: RequestF[str, str, str, str]) -> str:
 cssclass: request
 ---
 
-# {upper(r.method)} {f_url.rstrip('/')}
-{request.comment if request.comment else ""}
+# {r.method.upper()} {f_url.rstrip('/')}
+{r.comment if r.comment else ""}
 
 ## QueryString
 {query_string if query_string else "None"}
@@ -70,3 +72,44 @@ cssclass: request
 ## Body
 {r.postData if r.postData else "None"}
 """
+
+def content(env: Env, c: ContentF) -> str:
+    if "application/json" in c.mimeType:
+        text = c.text
+        if c.encoding == "base64":
+            text = base64.b64decode(text)
+        if text != "":
+            return json_(env, json.loads(text))
+    return ""
+
+
+def response(env: Env, r: ResponseF[str, str, str]) -> str:
+    return f"""---
+cssclass: response
+---
+
+## Body
+{r.content if r.content else "None"}
+"""
+
+def entry(env: Env, e: EntryF[str, str, str, str]) -> str:
+    return f"""{e.request}
+
+{e.response}
+"""
+
+def log(env: Env, e: LogF[str, str, str, str]) -> str:
+    return "\n__ENTRY\n".join(e.entries)
+
+
+def mk_obsidian(env: Env, h: Har) -> str:
+    return harf(
+        post_data=partial(post_data, env),
+        querystring=partial(query_string, env),
+        request=partial(request, env),
+        content=partial(content, env),
+        response=partial(response, env),
+        entry=partial(entry, env),
+        log=partial(log, env),
+        default=""
+    )(h)
