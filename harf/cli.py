@@ -93,11 +93,23 @@ def str_env(
     default=False,
     help="Make the output slightly more verbose by using the full url when available instead of entry number.",
 )
-@click.option("--min-reference-percent", "-m", "min_percent", default=2, show_default=True)
-@click.option("--max-reference-percent", "-x", "max_percent", default=98, show_default=True)
+@click.option(
+    "--min-reference-percent", "-m", "min_percent", default=2, show_default=True
+)
+@click.option(
+    "--max-reference-percent", "-x", "max_percent", default=98, show_default=True
+)
 @click.option("--obsidian", "-o", is_flag=True, default=False)
 def correlations(
-    har_file, interactive, diffable, headers, cookies, verbose, min_percent, max_percent, obsidian
+    har_file,
+    interactive,
+    diffable,
+    headers,
+    cookies,
+    verbose,
+    min_percent,
+    max_percent,
+    obsidian,
 ):
     har = from_json(Har, har_file.read())
     env = harf(
@@ -137,7 +149,7 @@ def correlations(
     if obsidian:
         obsidian_str = mk_obsidian(env, har)
         for i, e in enumerate(obsidian_str.split("__ENTRY")):
-            response_css = "---\ncssclass: response\n---" 
+            response_css = "---\ncssclass: response\n---"
             request, response = e.split(response_css)
             response_name = f"harf/obsidian_template/response_{i}.md"
             with open(f"harf/obsidian_template/request_{i}.md", "w") as request_file:

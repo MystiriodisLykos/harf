@@ -7,7 +7,9 @@ B = TypeVar("B")
 
 class Path(Protocol):
     next_: "Path"
-    def __len__(self) -> int: ...
+
+    def __len__(self) -> int:
+        ...
 
 
 @dataclass
@@ -17,6 +19,7 @@ class IntPath(Generic[A]):
 
     def __str__(self):
         return f"[{self.index}]{self.next_}"
+
     def __len__(self):
         return 1 + len(self.next_)
 
@@ -32,6 +35,7 @@ class StrPath(Generic[A]):
     def __len__(self):
         return 1 + len(self.next_)
 
+
 @dataclass
 class EndPath:
     def __str__(self):
@@ -39,6 +43,7 @@ class EndPath:
 
     def __len__(self):
         return 1
+
 
 DataPath = Union[IntPath[A], StrPath[A], EndPath]["DataPath"]  # type: ignore[index]
 
@@ -57,9 +62,11 @@ class HeaderPath(StrPath[DataPath]):
     def __str__(self):
         return f".header{super().__str__()}"
 
+
 class CookiePath(StrPath[DataPath]):
     def __str__(self):
         return f".cookie{super().__str__()}"
+
 
 @dataclass
 class BodyPath:
@@ -71,6 +78,7 @@ class BodyPath:
     def __len__(self):
         return 1 + len(self.next_)
 
+
 @dataclass
 class RequestPath:
     next_: Union[UrlPath, QueryPath, BodyPath, HeaderPath]
@@ -81,6 +89,7 @@ class RequestPath:
     def __len__(self):
         return 1 + len(self.next_)
 
+
 @dataclass
 class ResponsePath:
     next_: Union[HeaderPath, BodyPath]
@@ -90,6 +99,7 @@ class ResponsePath:
 
     def __len__(self):
         return 1 + len(self.next_)
+
 
 @dataclass
 class EntryPath:

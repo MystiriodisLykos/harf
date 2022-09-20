@@ -1,10 +1,6 @@
 from collections import defaultdict
 from functools import partial
-from typing import (
-    List,
-    Dict,
-    Callable
-)
+from typing import List, Dict, Callable
 from urllib.parse import urlparse
 import base64
 import json
@@ -37,7 +33,6 @@ from harf.core import (
     LogF,
 )
 from harf.jsonf import jsonf_cata, JsonF, JsonPrims
-
 
 
 class Env(Dict[JsonPrims, List[Path]]):
@@ -88,8 +83,10 @@ def header_env(h: HeaderF) -> Env:
 def cookie_env(c: CookieF) -> Env:
     return Env({c.value: [CookiePath(c.name, EndPath())]})
 
+
 def query_string_env(q: QueryStringF) -> Env:
     return Env({q.value: [QueryPath(q.name, EndPath())]})
+
 
 def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
     url_path = urlparse(r.url).path.strip("/").split("/")
@@ -102,7 +99,9 @@ def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
             request_env[p] = path + request_env[p]
         else:
             request_env[p] = path
-    return sum(r.cookies, sum(r.headers, sum(r.queryString, request_env))).map_paths(RequestPath)
+    return sum(r.cookies, sum(r.headers, sum(r.queryString, request_env))).map_paths(
+        RequestPath
+    )
 
 
 def content_env(c: ContentF) -> Env:
@@ -135,4 +134,3 @@ def log_env(l: LogF[Env, Env, Env, Env]) -> Env:
         for prim, paths in entry.items():
             log_env[prim] += [EntryPath(i, p) for p in paths]
     return Env(log_env)
-
