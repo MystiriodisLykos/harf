@@ -9,6 +9,6 @@ buildPythonPackage rec {
     propagatedBuildInputs = [ pyserde click ];
 
     checkInputs = [ pytestCheckHook hypothesis ];
-
+    pythonImportsCheck = ["harf.cli"];
     pytestFlagsArray = [ "--hypothesis-show-statistics" ];
 }
