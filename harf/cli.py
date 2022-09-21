@@ -1,4 +1,5 @@
 import code
+import shutil
 from functools import partial
 from itertools import chain
 from json import dumps
@@ -99,7 +100,7 @@ def str_env(
 @click.option(
     "--max-reference-percent", "-x", "max_percent", default=98, show_default=True
 )
-@click.option("--obsidian", "-o", is_flag=True, default=False)
+@click.option("--obsidian", "-o", type=click.Path(file_okay=False))
 def correlations(
     har_file,
     interactive,
@@ -147,12 +148,14 @@ def correlations(
     else:
         to_ref = str
     if obsidian:
+        out_dir = obsidian + "/" + ".".join(har_file.name.split("/")[-1].split(".")[:-1]) + "/"
+        shutil.copytree("harf/obsidian_template/", out_dir, dirs_exist_ok=True)
         obsidian_str = mk_obsidian(env, har)
         for i, e in enumerate(obsidian_str.split("__ENTRY")):
             response_css = "---\ncssclass: response\n---"
             request, response = e.split(response_css)
-            response_name = f"harf/obsidian_template/response_{i}.md"
-            with open(f"harf/obsidian_template/request_{i}.md", "w") as request_file:
+            response_name = f"{out_dir}response_{i}.md"
+            with open(f"{out_dir}request_{i}.md", "w") as request_file:
                 request_file.write(request)
                 request_file.write(f"\n# Response\n![[{response_name.split('/')[-1]}]]")
             with open(response_name, "w") as response_file:
