@@ -32,12 +32,12 @@ def _json_str(env: Env, element: JsonF[str]) -> str:
     if isinstance(element, dict):
         res = "- \\{\n"
         for k, v in element.items():
-            res += textwrap.indent(f"- {repr(k)}: {v}", " " * 4) + "\n"
+            res += textwrap.indent(f"- {repr(k)}: {v.lstrip('- ')}", " " * 4) + "\n"
         return res + "- \\}"
     elif isinstance(element, list):
         res = "- \\[\n"
         for e in element:
-            res += textwrap.indent("- " + e, " " * 4) + "\n"
+            res += textwrap.indent("- " + e.lstrip("- "), " " * 4) + "\n"
         return res + "- \\]"
     else:
         return _get_link(env, element)
