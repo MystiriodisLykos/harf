@@ -103,6 +103,9 @@ cssclass: response
 def entry(env: Env, e: EntryF[str, str, str, str]) -> str:
     return f"""{e.request}
 
+## Page
+![[{e.pageref}]]
+
 {e.response}
 """
 
