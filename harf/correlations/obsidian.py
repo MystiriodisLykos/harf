@@ -25,7 +25,7 @@ def _get_link(env: Env, value: JsonPrims) -> str:
     if value in env:
         link = str(env[value][0]).replace("[", "_").replace("]", "")
         return f"[[{link}|{value}]]"
-    return value
+    return repr(value)
 
 
 def _json_str(env: Env, element: JsonF[str]) -> str:
