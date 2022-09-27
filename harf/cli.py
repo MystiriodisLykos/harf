@@ -24,7 +24,7 @@ from harf.correlations.envs import (
     Path,
 )
 from harf.correlations.obsidian import mk_obsidian
-
+from harf.grouping.by_comment import icomment_requests
 
 def filter_by_percentages(min_percent: float, max_percent: float, env: Env) -> Env:
     max_reference_count = len(max(env.values(), key=len))
@@ -113,6 +113,7 @@ def correlations(
     obsidian,
 ):
     har = from_json(Har, har_file.read())
+    icomment_requests(har.log)
     env = harf(
         post_data=post_data_env,
         header=header_env if headers else lambda *a, **k: Env(),
