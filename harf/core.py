@@ -235,6 +235,7 @@ class EntryF(Generic[A, B, C, D]):
     serverIPAddress: ostr = None
     connection: ostr = None
     comment: ostr = ""
+    pageref: ostr = ""
 
     def nmap(
         self: "EntryF[A, B, C, D]",
