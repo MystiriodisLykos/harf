@@ -70,7 +70,11 @@ json_env = partial(jsonf_cata, _json_env)
 
 
 def post_data_env(pd: PostDataTextF) -> Env:
-    return json_env(json.loads(pd.text)).map_paths(BodyPath)
+    if "application/json" in pd.mimeType:
+        text = pd.text
+        if text != "":
+            return json_env(json.loads(text)).map_paths(BodyPath)
+    return Env()
 
 
 def header_env(h: HeaderF) -> Env:
