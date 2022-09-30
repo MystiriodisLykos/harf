@@ -258,6 +258,7 @@ def test_cookie_env_makes_a_single_env(cookie: CookieF):
     assert len(env[cookie.value]) == 1
     assert isinstance(env[cookie.value][0], CookiePath)
 
+
 @given(query_string=infer)
 def test_query_string_env_makes_a_single_env(query_string: QueryStringF):
     env = query_string_env(query_string)
@@ -285,3 +286,12 @@ def test_post_data_env_is_equivalent_to_json_env(json, post_data):
         assert len(jenv[v]) == len(rs)
         for j, p in zip(jenv[v], rs):
             assert p.next_ == j
+
+
+@given(post_data=post_data_text(mime_data=st.tuples(text, st.just(""))))
+def test_empty_post_data_returns_empty_env(post_data):
+    env = post_data_env(post_data)
+    assert len(env) == 0
+
+
+# test_empty_post_data_returns_empty_env()
