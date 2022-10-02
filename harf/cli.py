@@ -26,6 +26,7 @@ from harf.correlations.envs import (
 from harf.correlations.obsidian import mk_obsidian
 from harf.grouping.by_comment import icomment_requests
 
+
 def filter_by_percentages(min_percent: float, max_percent: float, env: Env) -> Env:
     max_reference_count = len(max(env.values(), key=len))
     min_bound = int(max_reference_count * min_percent)
@@ -165,7 +166,12 @@ def correlations(
     else:
         to_ref = str
     if obsidian:
-        out_dir = obsidian + "/" + ".".join(har_file.name.split("/")[-1].split(".")[:-1]) + "/"
+        out_dir = (
+            obsidian
+            + "/"
+            + ".".join(har_file.name.split("/")[-1].split(".")[:-1])
+            + "/"
+        )
         shutil.copytree("harf/obsidian_template/", out_dir, dirs_exist_ok=True)
         obsidian_str = mk_obsidian(env, har)
         for i, e in enumerate(obsidian_str.split("__ENTRY")):

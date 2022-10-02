@@ -132,7 +132,9 @@ def content_env(c: ContentF) -> Env:
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
-    return reduce(operator.or_, r.cookies, reduce(operator.or_, r.headers, r.content)).map_paths(ResponsePath)
+    return reduce(
+        operator.or_, r.cookies, reduce(operator.or_, r.headers, r.content)
+    ).map_paths(ResponsePath)
 
 
 def entry_env(e: EntryF[Env, Env, Env, Env]) -> Env:
