@@ -152,6 +152,7 @@ def correlations(
                     filter_by_percentages, min_percent / 100, max_percent / 100
                 ),
                 "str_env": str_env,
+                "unused_values": response_values - request_values,
             }
         )
         return

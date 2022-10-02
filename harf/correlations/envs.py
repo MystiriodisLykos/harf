@@ -59,6 +59,13 @@ class Env(Dict[JsonPrims, List[Path]]):
                 res[value] += other[value]
         return Env(res)
 
+    def __sub__(self, other):
+        res = defaultdict(list)
+        for value in self:
+            if value not in other:
+                res[value] += self[value]
+        return Env(res)
+
 
 def _json_env(element: JsonF[Env]) -> Env:
     if isinstance(element, dict):
