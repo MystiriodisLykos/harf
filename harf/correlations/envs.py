@@ -1,9 +1,10 @@
 from collections import defaultdict
-from functools import partial
-from typing import List, Dict, Callable
+from functools import partial, reduce
+from typing import List, Dict, Callable, TypeVar, Generic
 from urllib.parse import urlparse
 import base64
 import json
+import operator
 
 from harf.correlations.paths import (
     Path,
@@ -42,7 +43,7 @@ class Env(Dict[JsonPrims, List[Path]]):
             res[p] = list(map(f, ps))
         return Env(res)
 
-    def __add__(self, other):
+    def __or__(self, other):
         res = defaultdict(list)
         for p, ps in self.items():
             res[p] += ps
@@ -62,7 +63,7 @@ def _json_env(element: JsonF[Env]) -> Env:
         return Env({element: [EndPath()]})
     res = Env()
     for path, env in iter_:
-        res += env.map_paths(lambda p: mk_path(path, p))
+        res |= env.map_paths(lambda p: mk_path(path, p))
     return res
 
 
@@ -103,9 +104,13 @@ def request_env(r: RequestF[Env, Env, Env, Env]) -> Env:
             request_env[p] = path + request_env[p]
         else:
             request_env[p] = path
-    return sum(r.cookies, sum(r.headers, sum(r.queryString, request_env))).map_paths(
-        RequestPath
-    )
+    return reduce(
+        operator.or_,
+        r.cookies,
+        reduce(
+            operator.or_, r.headers, reduce(operator.or_, r.queryString, request_env)
+        ),
+    ).map_paths(RequestPath)
 
 
 def content_env(c: ContentF) -> Env:
@@ -119,17 +124,11 @@ def content_env(c: ContentF) -> Env:
 
 
 def response_env(r: ResponseF[Env, Env, Env]) -> Env:
-    return sum(r.cookies, sum(r.headers, r.content)).map_paths(ResponsePath)
+    return reduce(operator.or_, r.cookies, reduce(operator.or_, r.headers, r.content)).map_paths(ResponsePath)
 
 
 def entry_env(e: EntryF[Env, Env, Env, Env]) -> Env:
-    entry_env = e.request
-    for prim, paths in e.response.items():
-        if prim in entry_env:
-            entry_env[prim] += paths
-        else:
-            entry_env[prim] = paths
-    return entry_env
+    return e.request | e.response
 
 
 def log_env(l: LogF[Env, Env, Env, Env]) -> Env:
