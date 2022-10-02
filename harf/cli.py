@@ -55,6 +55,31 @@ def str_env(
     return res
 
 
+def request_valued_env(har: Har, headers: bool = False, cookies: bool = False) -> Env:
+    return harf(
+        post_data=post_data_env,
+        header=header_env if headers else None,
+        cookie=cookie_env if cookies else None,
+        querystring=query_string_env,
+        request=request_env,
+        entry=entry_env,
+        log=log_env,
+        default=Env(),
+    )(har)
+
+
+def response_valued_env(har: Har, headers: bool = False, cookies: bool = False) -> Env:
+    return harf(
+        header=header_env if headers else None,
+        cookie=cookie_env if cookies else None,
+        content=content_env,
+        response=response_env,
+        entry=entry_env,
+        log=log_env,
+        default=Env(),
+    )(har)
+
+
 @click.command()
 @click.argument("har-file", type=click.File("r"))
 @click.option(
@@ -114,18 +139,9 @@ def correlations(
 ):
     har = from_json(Har, har_file.read())
     icomment_requests(har.log)
-    env = harf(
-        post_data=post_data_env,
-        header=header_env if headers else lambda *a, **k: Env(),
-        cookie=cookie_env if cookies else lambda *a, **k: Env(),
-        querystring=query_string_env,
-        content=content_env,
-        response=response_env,
-        request=request_env,
-        entry=entry_env,
-        log=log_env,
-        default=Env(),
-    )(har)
+    request_values = request_valued_env(har)
+    response_values = response_valued_env(har)
+    env = request_values + response_values
     if interactive:
         code.interact(
             local={
