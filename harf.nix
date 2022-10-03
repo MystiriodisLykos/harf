@@ -1,8 +1,10 @@
 { lib, buildPythonPackage, pyserde, click, hypothesis, pytestCheckHook }:
 
 buildPythonPackage rec {
+    format = "pyproject";
+
     pname = "harf";
-    version = "0.0.1";
+    version = "0.0.2";
     
     src = ./.;
 

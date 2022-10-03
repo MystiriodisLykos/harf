@@ -4,10 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "harf"
-version = "0.1.0"
+version = "0.0.2"
 description = "Tools for processing har files"
 authors = [{ name = "Brendan", email = "brendandeleeuw@gmail.com" }]
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
+dependencies = [
+	"Click",
+	"pyserde",
+]
+
+[project.scripts]
+correlations = "harf.cli:correlations"
