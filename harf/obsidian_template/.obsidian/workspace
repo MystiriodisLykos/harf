@@ -7,12 +7,8 @@
         "id": "c41ef0d1cbd02af8",
         "type": "leaf",
         "state": {
-          "type": "markdown",
-          "state": {
-            "file": "entry 1 request.md",
-            "mode": "preview",
-            "source": false
-          }
+          "type": "empty",
+          "state": {}
         }
       }
     ],
@@ -61,7 +57,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "03df1796cd93bd0e",
@@ -77,7 +74,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "entry 1 request.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,9 +100,7 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {
-                "file": "entry 1 request.md"
-              }
+              "state": {}
             }
           }
         ]
