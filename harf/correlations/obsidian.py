@@ -59,6 +59,8 @@ def request(env: Env, r: RequestF[str, str, str, str]) -> str:
     url = urlparse(r.url).path.strip("/").split("/")
     f_url = "/"
     for p in url:
+        if p.isdigit():
+            p = int(p)
         f_url += _get_link(env, p).strip("'\"") + "/"
     query_string = ""
     if len(r.queryString) != 0:
