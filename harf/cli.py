@@ -82,7 +82,7 @@ def response_valued_env(har: Har, headers: bool = False, cookies: bool = False) 
 
 
 @click.command()
-@click.argument("har-file", type=click.File("r"))
+@click.argument("har-file", type=click.File("r", encoding="utf-8-sig"))
 @click.option(
     "--interactive",
     "-i",
