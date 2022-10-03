@@ -24,7 +24,10 @@ from harf.jsonf import jsonf_cata, JsonF, JsonPrims
 def _get_link(env: Env, value: JsonPrims) -> str:
     if value in env:
         link = str(env[value][0]).replace("[", "_").replace("]", "")
-        return f"[[{link}|{value}]]"
+        link = f"[[{link}|{value}]]"
+        if "'" in repr(value):
+            return f'"{link}"'
+        return link
     return repr(value)
 
 
@@ -32,7 +35,8 @@ def _json_str(env: Env, element: JsonF[str]) -> str:
     if isinstance(element, dict):
         res = "- \\{\n"
         for k, v in element.items():
-            res += textwrap.indent(f"- {repr(k)}: {v.lstrip('- ')}", " " * 4) + "\n"
+            key = repr(k).replace("'", '"')
+            res += textwrap.indent(f"- {key}: {v.lstrip('- ')}", " " * 4) + "\n"
         return res + "- \\}"
     elif isinstance(element, list):
         res = "- \\[\n"
