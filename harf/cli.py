@@ -1,9 +1,10 @@
 import code
+import colorsys
 import shutil
 import pathlib
 from functools import partial
 from itertools import chain
-from json import dumps
+from json import dumps, load, dump
 from typing import Callable
 from pprint import pprint
 
@@ -181,6 +182,25 @@ def correlations(
             with open(out_dir / f"response_{i}.md", "w") as response_file:
                 response_file.write(response_css)
                 response_file.write(response)
+        with open(out_dir / ".obsidian/graph.json") as graph:
+            graph = load(graph)
+            colors = graph["colorGroups"]
+            for i, page in enumerate(har.log.pages):
+                hue = i / len(har.log.pages)
+                r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
+                colors.append(
+                    {
+                        "query": f"![[{page.id}]]",
+                        "color": {
+                            "a": 1,
+                            "rgb": (int(r * 255) << 16)
+                            + (int(g * 255) < 8)
+                            + int(b * 255),
+                        },
+                    }
+                )
+        with open(out_dir / ".obsidian/graph.json", "w") as graph_file:
+            dump(graph, graph_file)
     else:
         print(str_env(env, verbose, diffable, to_ref))
 
