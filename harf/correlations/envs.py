@@ -51,6 +51,9 @@ class Env(Dict[JsonPrims, List[Path]]):
             res[p] += ps
         return Env(res)
 
+    def __ior__(self, other):
+        return self | other
+
     def __add__(self, other):
         res = defaultdict(list)
         for value in self:
