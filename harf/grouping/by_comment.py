@@ -1,4 +1,4 @@
-from harf.core import (
+from harf_serde import (
     RequestF,
     EntryF,
     LogF,

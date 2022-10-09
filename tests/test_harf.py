@@ -4,7 +4,7 @@ from json import dumps as json_dumps
 
 from hypothesis import assume, example, given, infer, note, strategies as st
 
-from harf.core import (
+from harf_serde import (
     harf,
     CookieF,
     HeaderF,

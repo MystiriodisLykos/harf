@@ -4,7 +4,7 @@ from string import printable
 
 from hypothesis import assume, given, infer, strategies as st
 
-from harf.core import (
+from harf_serde import (
     TimingsF,
     BeforeAfterRequestF,
     CacheF,

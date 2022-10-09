@@ -6,6 +6,18 @@ import base64
 import json
 import operator
 
+from harf_serde import (
+    PostDataTextF,
+    QueryStringF,
+    HeaderF,
+    CookieF,
+    ContentF,
+    RequestF,
+    ResponseF,
+    EntryF,
+    LogF,
+)
+
 from harf.correlations.paths import (
     Path,
     IntPath,
@@ -20,18 +32,6 @@ from harf.correlations.paths import (
     RequestPath,
     ResponsePath,
     EntryPath,
-)
-
-from harf.core import (
-    PostDataTextF,
-    QueryStringF,
-    HeaderF,
-    CookieF,
-    ContentF,
-    RequestF,
-    ResponseF,
-    EntryF,
-    LogF,
 )
 from harf.jsonf import jsonf_cata, JsonF, JsonPrims
 

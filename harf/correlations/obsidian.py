@@ -3,7 +3,7 @@ import json
 from functools import partial
 from urllib.parse import urlparse
 
-from harf.core import (
+from harf_serde import (
     PostDataTextF,
     QueryStringF,
     HeaderF,

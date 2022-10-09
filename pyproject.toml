@@ -14,6 +14,7 @@ classifiers = [
 dependencies = [
 	"Click",
 	"pyserde",
+        "harf-serde",
 ]
 
 [project.scripts]

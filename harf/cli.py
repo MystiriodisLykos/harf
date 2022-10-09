@@ -10,8 +10,8 @@ from pprint import pprint
 
 import click
 from serde.json import from_json
+from harf_serde import Har, harf
 
-from harf.core import Har, harf
 from harf.correlations.envs import (
     post_data_env,
     header_env,
