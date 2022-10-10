@@ -1,9 +1,11 @@
 import code
 import colorsys
+import glob
 import shutil
 import pathlib
 from functools import partial
 from itertools import chain
+from importlib import resources
 from json import dumps, load, dump
 from typing import Callable
 from pprint import pprint
@@ -170,8 +172,19 @@ def correlations(
         to_ref = str
     if obsidian:
         obsidian = pathlib.Path(obsidian)
+        package_dir = pathlib.Path(__file__).parent
         out_dir = obsidian / pathlib.Path(har_file.name).stem
-        shutil.copytree("harf/obsidian_template/", out_dir, dirs_exist_ok=True)
+        (out_dir / ".obsidian" / "snippets").mkdir(parents=True, exist_ok=True)
+        template_path = package_dir / "obsidian_template/"
+        for p in (template_path).glob("**/*"):
+            # Copying all the files manually because sh.copytree preservers read-only permissions
+            if p.is_dir():
+                continue
+            destination_name = out_dir / p.relative_to(template_path)
+            destination_name.parent.mkdir(parents=True, exist_ok=True)
+            with open(p) as src:
+                with open(destination_name, "w") as dst:
+                    dst.write(src.read())
         obsidian_str = mk_obsidian(env, har)
         for i, e in enumerate(obsidian_str.split("__ENTRY")):
             response_css = "---\ncssclass: response\n---"
