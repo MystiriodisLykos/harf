@@ -25,7 +25,8 @@ def icomment_requests(har: FHar) -> FHar:
                     )
                 )
                 continue
-            entry.pageref = pages[-1].id
+            pageref = pages[-1].id if len(pages) else entry.pageref
+            entry.pageref = pageref
             entries.append(entry)
         har.pages = pages
         har.entries = entries
