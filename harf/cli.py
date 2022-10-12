@@ -27,7 +27,7 @@ from harf.correlations.envs import (
     Env,
     Path,
 )
-from harf.correlations.obsidian import mk_obsidian
+from harf.correlations.obsidian import mk_obsidian, write_files
 from harf.grouping.by_comment import icomment_requests
 
 
@@ -172,48 +172,10 @@ def correlations(
         to_ref = str
     if obsidian:
         obsidian = pathlib.Path(obsidian)
-        package_dir = pathlib.Path(__file__).parent
         out_dir = obsidian / pathlib.Path(har_file.name).stem
         (out_dir / ".obsidian" / "snippets").mkdir(parents=True, exist_ok=True)
-        template_path = package_dir / "obsidian_template/"
-        for p in (template_path).glob("**/*"):
-            # Copying all the files manually because sh.copytree preservers read-only permissions
-            if p.is_dir():
-                continue
-            destination_name = out_dir / p.relative_to(template_path)
-            destination_name.parent.mkdir(parents=True, exist_ok=True)
-            with open(p) as src:
-                with open(destination_name, "w") as dst:
-                    dst.write(src.read())
-        obsidian_str = mk_obsidian(env, har)
-        for i, e in enumerate(obsidian_str.split("__ENTRY")):
-            response_css = "---\ncssclass: response\n---"
-            request, response = e.split(response_css)
-            with open(out_dir / f"request_{i}.md", "w") as request_file:
-                request_file.write(request)
-                request_file.write(f"\n# Response\n![[response_{i}]]")
-            with open(out_dir / f"response_{i}.md", "w") as response_file:
-                response_file.write(response_css)
-                response_file.write(response)
-        with open(out_dir / ".obsidian/graph.json") as graph:
-            graph = load(graph)
-            colors = graph["colorGroups"]
-            for i, page in enumerate(har.log.pages):
-                hue = i / len(har.log.pages)
-                r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
-                colors.append(
-                    {
-                        "query": f"![[{page.id}]]",
-                        "color": {
-                            "a": 1,
-                            "rgb": (int(r * 255) << 16)
-                            + (int(g * 255) < 8)
-                            + int(b * 255),
-                        },
-                    }
-                )
-        with open(out_dir / ".obsidian/graph.json", "w") as graph_file:
-            dump(graph, graph_file)
+        obsidian_data = mk_obsidian(env, har)
+        write_files(obsidian_data, out_dir)
     else:
         print(str_env(env, verbose, diffable, to_ref))
 
