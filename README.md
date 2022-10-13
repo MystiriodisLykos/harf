@@ -34,4 +34,4 @@ However, once you start getting into larger files with hundreds of requests and 
 With `-i` you will be dropped into a python shell with the har data and correlation info to inspect and manipulate the data as needed.
 And because I am an [obsidian](https://obsidian.md/) nerd `-o <vault_path>` will output a bunch of markdown files to the `vault_path` where every request, response, and used value gets their own file and are back-linked through usage.
 
-![[Pasted image 20221012215940.png]]
+![Example Obsidian graph of linked HAR data](https://github.com/MystiriodisLykos/harf/blob/dev/assets/obsidian_example.png?raw=true)
