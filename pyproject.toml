@@ -22,3 +22,9 @@ readme = "README.md"
 
 [project.scripts]
 correlations = "harf.cli:correlations"
+
+[project.urls]
+Homepage = "https://github.com/MystiriodisLykos/harf"
+
+[tool.setuptools]
+packages = ["harf"]
