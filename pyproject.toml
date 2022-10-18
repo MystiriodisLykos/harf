@@ -28,3 +28,4 @@ Homepage = "https://github.com/MystiriodisLykos/harf"
 
 [tool.setuptools]
 packages = ["harf"]
+zip-safe = false
