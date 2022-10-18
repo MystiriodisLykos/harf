@@ -14,7 +14,7 @@ def icomment_requests(har: FHar) -> FHar:
         entries = []
         for entry in har.entries:
             request = entry.request
-            if request.url.startswith("COMMENT"):
+            if request.url.lower().startswith("http://comment"):
                 name = request.url.split("/")[-1]
                 pages.append(
                     Page(
