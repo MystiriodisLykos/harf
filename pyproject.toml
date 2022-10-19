@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "harf"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tools for processing har files"
 authors = [{ name = "Brendan", email = "brendandeleeuw@gmail.com" }]
 classifiers = [
@@ -24,7 +24,7 @@ readme = "README.md"
 correlations = "harf.cli:correlations"
 
 [project.urls]
-Homepage = "https://github.com/MystiriodisLykos/harf"
+Homepage = "https://github.com/MystiriodisLykos/harf/tree/v0.1.1"
 
 [tool.setuptools]
 packages = ["harf"]
